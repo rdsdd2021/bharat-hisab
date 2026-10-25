@@ -1,0 +1,16 @@
+name: ezo_l10n_vernacular
+description: 10-Language Indian vernacular runtime localization engine and reactive locale controller for EZO POS.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  meta: ^1.11.0
+  ezo_core_models:
+    path: ../ezo_core_models
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0

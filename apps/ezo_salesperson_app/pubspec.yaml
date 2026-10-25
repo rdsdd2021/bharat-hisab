@@ -1,0 +1,29 @@
+name: ezo_salesperson_app
+description: Companion App for Floor Billing, Field Order Booking, and Staff Udhaar Collections.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ezo_core_models:
+    path: ../../packages/ezo_core_models
+  ezo_gst_tax_engine:
+    path: ../../packages/ezo_gst_tax_engine
+  ezo_thermal_printer_escpos:
+    path: ../../packages/ezo_thermal_printer_escpos
+  ezo_inventory_barcode:
+    path: ../../packages/ezo_inventory_barcode
+  ezo_khata_upi_whatsapp:
+    path: ../../packages/ezo_khata_upi_whatsapp
+  ezo_l10n_vernacular:
+    path: ../../packages/ezo_l10n_vernacular
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0

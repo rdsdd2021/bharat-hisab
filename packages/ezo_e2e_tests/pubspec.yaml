@@ -1,0 +1,28 @@
+name: ezo_e2e_tests
+description: End-to-end cross-package integration tests for the EZO POS & Billing Monorepo.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  meta: ^1.11.0
+  ezo_core_models:
+    path: ../ezo_core_models
+  ezo_gst_tax_engine:
+    path: ../ezo_gst_tax_engine
+  ezo_thermal_printer_escpos:
+    path: ../ezo_thermal_printer_escpos
+  ezo_inventory_barcode:
+    path: ../ezo_inventory_barcode
+  ezo_khata_upi_whatsapp:
+    path: ../ezo_khata_upi_whatsapp
+  ezo_online_dukan_ai:
+    path: ../ezo_online_dukan_ai
+  ezo_l10n_vernacular:
+    path: ../ezo_l10n_vernacular
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0

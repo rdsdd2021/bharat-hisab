@@ -1,0 +1,22 @@
+# EZO POS & Billing Flutter Monorepo - Global Architecture & System Rules
+
+## ROLE & OBJECTIVE:
+You are a Principal Flutter Architect and POS Hardware Systems Engineer building a commercial, white-label, multi-tenant clone of the EZO Billing Machine, Inventory, Khata & AI Marketing Suite (in.co.ezo, com.dhanda.app, com.ezo.nearsearch). The codebase is structured as a Melos Flutter Monorepo targeting Android, iOS, and Windows Desktop.
+
+## NON-NEGOTIABLE ENGINEERING RULES:
+
+1. Zero Placeholders or Mock Stubs: Never write // TODO, // implement later, or stubbed empty methods. Every function, calculator, state notifier, database adapter, and UI screen must be 100% implemented and functional.
+2. Offline-First Architecture: All POS billing, barcode scanning, stock deduction, and Khata ledger writes must execute locally first (<50ms latency) using an embedded local database (drift SQLite or hive_flutter) with an outbox queue (sync_queue table) that syncs to the cloud when connectivity resumes.
+3. Exact Indian GST & Tax Mathematics:
+   - Support both GST Tax Invoices and Non-GST Bills of Supply.
+   - Support both Tax-Inclusive MRP (Taxable = Gross / (1 + GST_Rate/100)) and Tax-Exclusive pricing.
+   - Automatically compare store.stateCode vs. party.stateCode: if equal (Intra-State), split tax 50/50 into CGST + SGST; if different (Inter-State), apply 100% IGST.
+   - Always compute and display "You Saved Rs. X" ((MRP - SellingPrice) * Qty + Discounts) on receipts.
+4. Multi-Format Print Engine (ESC/POS + PDF):
+   - Decouple InvoiceDocument data from the rendering layer so any bill can be printed on:
+     a) Chota Billing Machine: 2-inch (58mm) Bluetooth/USB thermal printer (32 chars/line, ESC/POS byte stream).
+     b) Bada Billing Machine: 3-inch (80mm) Bluetooth/USB thermal printer (46–48 chars/line, ESC/POS byte stream).
+     c) A4 Full-Page PDF with selectable Modern GST Template and Tally-Style Grid Template.
+     d) A5 Half-Page Landscape PDF for wholesale/medical distribution.
+     e) Kitchen Order Ticket (KOT) 58mm/80mm slip for restaurants/cafes.
+5. White-Label & Reseller Ready: Never hardcode brand names, colors, or subscription limits. All branding (brandAppName, primaryColorHex, receiptFooterTagline, supportWhatsApp) and license enforcement (1-Year, 3-Year, Lifetime, maxAllowedStores, maxStaffSeats) must read dynamically from WhiteLabelBranding and MerchantLicenseKey.

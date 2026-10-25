@@ -1,0 +1,4 @@
+# melos_managed_dependency_overrides: ezo_core_models
+dependency_overrides:
+  ezo_core_models:
+    path: ..\\ezo_core_models

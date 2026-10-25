@@ -1,0 +1,10 @@
+name: ezo_pos_workspace
+description: White-Label EZO POS & Billing Flutter Monorepo Workspace
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dev_dependencies:
+  melos: ^6.0.0
+  lints: ^3.0.0

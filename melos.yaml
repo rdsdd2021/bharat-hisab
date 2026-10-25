@@ -1,0 +1,32 @@
+name: ezo_pos_workspace
+repository: https://github.com/ezo/ezo_pos_workspace
+
+packages:
+  - apps/**
+  - packages/**
+
+command:
+  version:
+    linkToCommits: true
+    workspaceChangelog: true
+
+scripts:
+  analyze:
+    run: melos exec -- "flutter analyze . || dart analyze ."
+    description: Run analyzer across all apps and packages.
+
+  test:
+    run: melos exec --dir-exists="test" -- "flutter test || dart test"
+    description: Run all unit and integration tests.
+
+  build:pos_apk:
+    run: melos exec --scope="ezo_pos_merchant_app" -- "flutter build apk --release"
+    description: Build release APK for EZO Merchant POS.
+
+  build:sales_apk:
+    run: melos exec --scope="ezo_salesperson_app" -- "flutter build apk --release"
+    description: Build release APK for EZO Salesperson App.
+
+  build:reseller_web:
+    run: melos exec --scope="ezo_reseller_admin_portal" -- "flutter build web --release"
+    description: Build release web bundle for EZO Reseller Admin Portal.

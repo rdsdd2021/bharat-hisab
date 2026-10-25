@@ -1,0 +1,14 @@
+# melos_managed_dependency_overrides: ezo_core_models,ezo_gst_tax_engine,ezo_inventory_barcode,ezo_khata_upi_whatsapp,ezo_l10n_vernacular,ezo_thermal_printer_escpos
+dependency_overrides:
+  ezo_core_models:
+    path: ..\\..\\packages\\ezo_core_models
+  ezo_gst_tax_engine:
+    path: ..\\..\\packages\\ezo_gst_tax_engine
+  ezo_inventory_barcode:
+    path: ..\\..\\packages\\ezo_inventory_barcode
+  ezo_khata_upi_whatsapp:
+    path: ..\\..\\packages\\ezo_khata_upi_whatsapp
+  ezo_l10n_vernacular:
+    path: ..\\..\\packages\\ezo_l10n_vernacular
+  ezo_thermal_printer_escpos:
+    path: ..\\..\\packages\\ezo_thermal_printer_escpos

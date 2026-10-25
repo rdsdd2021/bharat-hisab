@@ -1,0 +1,8 @@
+# melos_managed_dependency_overrides: ezo_core_models,ezo_gst_tax_engine,ezo_khata_upi_whatsapp
+dependency_overrides:
+  ezo_core_models:
+    path: ..\\ezo_core_models
+  ezo_gst_tax_engine:
+    path: ..\\ezo_gst_tax_engine
+  ezo_khata_upi_whatsapp:
+    path: ..\\ezo_khata_upi_whatsapp

@@ -1,0 +1,25 @@
+name: ezo_reseller_admin_portal
+description: White-Label Reseller Admin Portal for license key issuance and multi-tenant management.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  lucide_icons_flutter: ^3.1.25
+  ezo_core_models:
+    path: ../../packages/ezo_core_models
+  ezo_l10n_vernacular:
+    path: ../../packages/ezo_l10n_vernacular
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

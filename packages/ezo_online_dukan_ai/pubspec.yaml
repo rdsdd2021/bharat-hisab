@@ -1,0 +1,20 @@
+name: ezo_online_dukan_ai
+description: WhatsApp Online Dukan storefront, Dhanda AI GBP auditor & review replier, and NearSearch Generative Engine Optimizer.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  meta: ^1.11.0
+  ezo_core_models:
+    path: ../ezo_core_models
+  ezo_gst_tax_engine:
+    path: ../ezo_gst_tax_engine
+  ezo_khata_upi_whatsapp:
+    path: ../ezo_khata_upi_whatsapp
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0

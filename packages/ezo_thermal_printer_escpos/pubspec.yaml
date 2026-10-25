@@ -1,0 +1,18 @@
+name: ezo_thermal_printer_escpos
+description: Hardware ESC/POS thermal printer engine (58mm Chota & 80mm Bada), KOT slips, and A4/A5 PDF invoice templates.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  meta: ^1.11.0
+  ezo_core_models:
+    path: ../ezo_core_models
+  ezo_gst_tax_engine:
+    path: ../ezo_gst_tax_engine
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0

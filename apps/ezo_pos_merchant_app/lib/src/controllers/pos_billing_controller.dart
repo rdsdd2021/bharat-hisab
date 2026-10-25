@@ -1,0 +1,271 @@
+import 'package:flutter/foundation.dart';
+import 'package:ezo_core_models/ezo_core_models.dart';
+import 'package:ezo_gst_tax_engine/ezo_gst_tax_engine.dart';
+import 'package:ezo_inventory_barcode/ezo_inventory_barcode.dart';
+
+class PosBillingController extends ChangeNotifier {
+  final EzoOfflineRepository repository;
+
+  // Active Store Profile & Staff
+  BusinessProfile _currentProfile;
+  StaffMember? _currentStaff;
+
+  // Invoice Mode Settings
+  bool _isGstInvoice = true;
+  InvoiceDocType _docType = InvoiceDocType.gstTaxInvoice;
+  PrintFormat _printFormat = PrintFormat.chota58mm;
+  SettlementMode _settlementMode = SettlementMode.cash;
+
+  // Active Cart State
+  final List<InvoiceLineItem> _cartLines = [];
+  PartyAccount? _selectedCustomer;
+  double _billDiscount = 0.0;
+  double? _customAmountReceived;
+  InvoiceCustomFields _customFields = const InvoiceCustomFields();
+
+  // Search and Category Filter
+  String _selectedCategory = 'All';
+  String _searchQuery = '';
+
+  PosBillingController({
+    required this.repository,
+    required BusinessProfile initialProfile,
+    StaffMember? initialStaff,
+  })  : _currentProfile = initialProfile,
+        _currentStaff = initialStaff;
+
+  // Getters
+  BusinessProfile get currentProfile => _currentProfile;
+  StaffMember? get currentStaff => _currentStaff;
+  bool get isGstInvoice => _isGstInvoice;
+  InvoiceDocType get docType => _docType;
+  PrintFormat get printFormat => _printFormat;
+  SettlementMode get settlementMode => _settlementMode;
+  List<InvoiceLineItem> get cartLines => List.unmodifiable(_cartLines);
+  PartyAccount? get selectedCustomer => _selectedCustomer;
+  double get billDiscount => _billDiscount;
+  InvoiceCustomFields get customFields => _customFields;
+  String get selectedCategory => _selectedCategory;
+  String get searchQuery => _searchQuery;
+
+  // Computed Totals
+  double get taxableSubtotal => _cartLines.fold(0.0, (sum, i) => sum + i.taxableAmount);
+  double get totalCgst => _cartLines.fold(0.0, (sum, i) => sum + i.cgstAmount);
+  double get totalSgst => _cartLines.fold(0.0, (sum, i) => sum + i.sgstAmount);
+  double get totalIgst => _cartLines.fold(0.0, (sum, i) => sum + i.igstAmount);
+  double get totalTax => totalCgst + totalSgst + totalIgst;
+
+  double get grandTotal {
+    final raw = (taxableSubtotal + totalTax - _billDiscount).clamp(0.0, double.infinity);
+    return raw.roundToDouble();
+  }
+
+  double get amountReceived {
+    if (_customAmountReceived != null) return _customAmountReceived!;
+    if (_settlementMode == SettlementMode.creditUdhaar) return 0.0;
+    return grandTotal;
+  }
+
+  double get balanceUdhaarDue {
+    final diff = grandTotal - amountReceived;
+    return diff > 0.001 ? diff : 0.0;
+  }
+
+  double get totalCustomerSavings {
+    double itemSavings = 0.0;
+    for (final line in _cartLines) {
+      itemSavings += line.itemSavings;
+    }
+    return itemSavings + _billDiscount;
+  }
+
+  List<ProductItem> get filteredProducts {
+    var all = repository.getAllProducts();
+    if (_selectedCategory != 'All') {
+      all = all.where((p) => p.category == _selectedCategory).toList();
+    }
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase().trim();
+      all = all.where((p) =>
+          p.name.toLowerCase().contains(q) ||
+          p.skuCode.toLowerCase().contains(q) ||
+          p.barcode.toLowerCase().contains(q)).toList();
+    }
+    return all;
+  }
+
+  List<String> get availableCategories {
+    final cats = repository.getAllProducts().map((p) => p.category).toSet().toList();
+    cats.sort();
+    return ['All', ...cats];
+  }
+
+  List<ProductItem> get upsellSuggestions {
+    return UpsellRecommender.getUpsellSuggestions(
+      cartLines: _cartLines,
+      catalog: repository.getAllProducts(),
+      maxSuggestions: 4,
+    );
+  }
+
+  // Setters & Modifiers
+  void setGstMode(bool isGst) {
+    _isGstInvoice = isGst;
+    _recalculateCart();
+    notifyListeners();
+  }
+
+  void setDocType(InvoiceDocType type) {
+    _docType = type;
+    notifyListeners();
+  }
+
+  void setPrintFormat(PrintFormat format) {
+    _printFormat = format;
+    notifyListeners();
+  }
+
+  void setSettlementMode(SettlementMode mode) {
+    _settlementMode = mode;
+    if (mode == SettlementMode.creditUdhaar) {
+      _customAmountReceived = 0.0;
+    } else {
+      _customAmountReceived = grandTotal;
+    }
+    notifyListeners();
+  }
+
+  void setCustomer(PartyAccount? customer) {
+    _selectedCustomer = customer;
+    _recalculateCart();
+    notifyListeners();
+  }
+
+  void setCustomFields(InvoiceCustomFields fields) {
+    _customFields = fields;
+    notifyListeners();
+  }
+
+  void setBillDiscount(double discount) {
+    _billDiscount = discount;
+    notifyListeners();
+  }
+
+  void setCustomAmountReceived(double amount) {
+    _customAmountReceived = amount;
+    notifyListeners();
+  }
+
+  void setCategory(String category) {
+    _selectedCategory = category;
+    notifyListeners();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
+
+  void addProductToCart(ProductItem product, {double qty = 1.0, String cookingNotes = ''}) {
+    final existingIdx = _cartLines.indexWhere((l) => l.productId == product.id);
+    if (existingIdx != -1) {
+      final current = _cartLines[existingIdx];
+      updateCartLineQty(existingIdx, current.quantity + qty);
+    } else {
+      final isInterState = _currentProfile.stateCode != (_selectedCustomer?.stateCode ?? _currentProfile.stateCode);
+      final line = EzoGstTaxEngine.buildLineItem(
+        product: product,
+        quantity: qty,
+        isGstInvoice: _isGstInvoice,
+        isInterStateSupply: isInterState,
+        cookingNotes: cookingNotes,
+      );
+      _cartLines.add(line);
+      notifyListeners();
+    }
+  }
+
+  void updateCartLineQty(int index, double newQty) {
+    if (newQty <= 0) {
+      _cartLines.removeAt(index);
+    } else {
+      final line = _cartLines[index];
+      final prod = repository.getProduct(line.productId);
+      if (prod != null) {
+        final isInterState = _currentProfile.stateCode != (_selectedCustomer?.stateCode ?? _currentProfile.stateCode);
+        _cartLines[index] = EzoGstTaxEngine.buildLineItem(
+          product: prod,
+          quantity: newQty,
+          overrideUnitPrice: line.unitSellingPrice,
+          lineDiscountAmount: line.lineDiscountAmount,
+          isGstInvoice: _isGstInvoice,
+          isInterStateSupply: isInterState,
+          cookingNotes: line.cookingNotes,
+        );
+      }
+    }
+    notifyListeners();
+  }
+
+  void removeCartLine(int index) {
+    if (index >= 0 && index < _cartLines.length) {
+      _cartLines.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  void clearCart() {
+    _cartLines.clear();
+    _billDiscount = 0.0;
+    _customAmountReceived = null;
+    _customFields = const InvoiceCustomFields();
+    _selectedCustomer = null;
+    notifyListeners();
+  }
+
+  void _recalculateCart() {
+    final isInterState = _currentProfile.stateCode != (_selectedCustomer?.stateCode ?? _currentProfile.stateCode);
+    for (int i = 0; i < _cartLines.length; i++) {
+      final line = _cartLines[i];
+      final prod = repository.getProduct(line.productId);
+      if (prod != null) {
+        _cartLines[i] = EzoGstTaxEngine.buildLineItem(
+          product: prod,
+          quantity: line.quantity,
+          overrideUnitPrice: line.unitSellingPrice,
+          lineDiscountAmount: line.lineDiscountAmount,
+          isGstInvoice: _isGstInvoice,
+          isInterStateSupply: isInterState,
+          cookingNotes: line.cookingNotes,
+        );
+      }
+    }
+  }
+
+  /// Builds the complete InvoiceDocument from active cart
+  InvoiceDocument buildCurrentInvoice() {
+    final billNo = 'EZO-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    return EzoGstTaxEngine.createInvoiceDocument(
+      id: 'inv_${DateTime.now().millisecondsSinceEpoch}',
+      invoiceNumber: billNo,
+      docType: _docType,
+      settlementMode: _settlementMode,
+      invoiceDate: DateTime.now(),
+      storeProfile: _currentProfile,
+      party: _selectedCustomer,
+      lineItems: _cartLines,
+      billLevelDiscount: _billDiscount,
+      amountReceived: amountReceived,
+      customFields: _customFields,
+      cashier: _currentStaff,
+    );
+  }
+
+  /// Commits invoice to local offline database and decrements inventory
+  Future<InvoiceDocument> commitInvoice() async {
+    final invoice = buildCurrentInvoice();
+    await repository.commitSalesInvoice(invoice);
+    clearCart();
+    return invoice;
+  }
+}
