@@ -6,7 +6,12 @@ import 'theme/ezo_admin_theme.dart';
 import 'theme/google_fonts.dart';
 
 class ResellerDashboardScreen extends StatefulWidget {
-  const ResellerDashboardScreen({super.key});
+  final VoidCallback? onLogout;
+
+  const ResellerDashboardScreen({
+    super.key,
+    this.onLogout,
+  });
 
   @override
   State<ResellerDashboardScreen> createState() => _ResellerDashboardScreenState();
@@ -279,7 +284,16 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
             ),
             onPressed: () => _showIssueKeyDialog(context),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
+
+          // Sign Out Button
+          if (widget.onLogout != null)
+            IconButton(
+              icon: const Icon(LucideIcons.logOut, color: Color(0xFF94A3B8), size: 18),
+              tooltip: 'Sign Out Admin',
+              onPressed: widget.onLogout,
+            ),
+          const SizedBox(width: 12),
         ],
         bottom: TabBar(
           controller: _tabCtrl,

@@ -268,4 +268,9 @@ class PosBillingController extends ChangeNotifier {
     clearCart();
     return invoice;
   }
+
+  /// Reloads the catalog from repository storage
+  void reloadCatalog() {
+    notifyListeners();
+  }
 }

@@ -243,11 +243,64 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
 
         // Product List
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.only(bottom: 80),
-            itemCount: filtered.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, idx) {
+          child: filtered.isEmpty
+              ? Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: const BoxDecoration(
+                            color: EzoColors.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(LucideIcons.boxes, size: 30, color: EzoColors.primary),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Products in Catalog',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: EzoColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Add your stock inventory with barcodes, purchase/retail prices, and low-stock alerts.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: EzoColors.textMuted,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: EzoColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(LucideIcons.plus, size: 16),
+                          label: const Text('Add Product Item'),
+                          onPressed: () => _showAddProductDialog(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 80),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, idx) {
               final p = filtered[idx];
               return Container(
                 color: EzoColors.surface,

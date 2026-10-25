@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
-import 'src/demo/demo_data_seeder.dart';
+import 'src/screens/merchant_auth_screen.dart';
 import 'src/screens/main_shell_layout.dart';
 import 'src/theme/ezo_theme.dart';
 
@@ -13,44 +13,81 @@ void main() async {
 
   final repository = EzoOfflineRepository(db: localDb);
 
-  // If local store is empty, seed demo retail & kirana data
-  if (repository.getAllProfiles().isEmpty) {
-    await DemoDataSeeder.seedDemoStore(repository);
-  }
-
-  final profile = repository.getAllProfiles().first;
-  final staff = repository.getAllStaff().first;
-
-  runApp(EzoMerchantPosApp(
-    repository: repository,
-    profile: profile,
-    staff: staff,
-  ));
+  // NOTE: Zero forced pre-seeding! The merchant signs up and configures their real business!
+  runApp(BharatHisabMerchantApp(repository: repository));
 }
 
-class EzoMerchantPosApp extends StatelessWidget {
+class BharatHisabMerchantApp extends StatefulWidget {
   final EzoOfflineRepository repository;
-  final BusinessProfile profile;
-  final StaffMember staff;
 
-  const EzoMerchantPosApp({
+  const BharatHisabMerchantApp({
     super.key,
     required this.repository,
-    required this.profile,
-    required this.staff,
   });
+
+  @override
+  State<BharatHisabMerchantApp> createState() => _BharatHisabMerchantAppState();
+}
+
+class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
+  BusinessProfile? _authenticatedProfile;
+  StaffMember? _authenticatedStaff;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingSession();
+  }
+
+  void _checkExistingSession() {
+    final profiles = widget.repository.getAllProfiles();
+    final staff = widget.repository.getAllStaff();
+    if (profiles.isNotEmpty && staff.isNotEmpty) {
+      _authenticatedProfile = profiles.first;
+      _authenticatedStaff = staff.first;
+    }
+  }
+
+  void _onAuthenticated(BusinessProfile profile, StaffMember staff) {
+    setState(() {
+      _authenticatedProfile = profile;
+      _authenticatedStaff = staff;
+    });
+  }
+
+  void _onLogout() {
+    setState(() {
+      _authenticatedStaff = null;
+    });
+  }
+
+  Future<void> _onResetAll() async {
+    await widget.repository.clearAll();
+    setState(() {
+      _authenticatedProfile = null;
+      _authenticatedStaff = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: profile.branding.brandAppName,
+      title: 'BharatHisab (भारतहिसाब)',
       debugShowCheckedModeBanner: false,
       theme: EzoTheme.lightTheme,
-      home: MainShellLayout(
-        repository: repository,
-        initialProfile: profile,
-        initialStaff: staff,
-      ),
+      home: _authenticatedProfile != null && _authenticatedStaff != null
+          ? MainShellLayout(
+              repository: widget.repository,
+              initialProfile: _authenticatedProfile!,
+              initialStaff: _authenticatedStaff!,
+              onLogout: _onLogout,
+              onResetAll: _onResetAll,
+            )
+          : MerchantAuthScreen(
+              repository: widget.repository,
+              onAuthenticated: _onAuthenticated,
+              initialTab: widget.repository.getAllProfiles().isEmpty ? 0 : 1,
+            ),
     );
   }
 }

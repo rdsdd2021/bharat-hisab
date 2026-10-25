@@ -16,12 +16,16 @@ class MainShellLayout extends StatefulWidget {
   final EzoOfflineRepository repository;
   final BusinessProfile initialProfile;
   final StaffMember initialStaff;
+  final VoidCallback? onLogout;
+  final Future<void> Function()? onResetAll;
 
   const MainShellLayout({
     super.key,
     required this.repository,
     required this.initialProfile,
     required this.initialStaff,
+    this.onLogout,
+    this.onResetAll,
   });
 
   @override
@@ -70,6 +74,8 @@ class _MainShellLayoutState extends State<MainShellLayout> {
             onProfileUpdated: (updated) {
               setState(() => _activeProfile = updated);
             },
+            onLogout: widget.onLogout,
+            onResetAll: widget.onResetAll,
           ),
         ];
 
@@ -218,6 +224,38 @@ class _MainShellLayoutState extends State<MainShellLayout> {
                                     ),
                                   ),
                                 ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Cashier Pill & Lock Menu
+                      InkWell(
+                        onTap: () => _showCashierMenu(context),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: EzoColors.surfaceSecondary,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: EzoColors.border, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.userCheck, size: 13, color: EzoColors.primary),
+                              const SizedBox(width: 5),
+                              Text(
+                                widget.initialStaff.fullName.split(' ').first,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: EzoColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(LucideIcons.lock, size: 11, color: EzoColors.textMuted),
                             ],
                           ),
                         ),
@@ -388,6 +426,148 @@ class _MainShellLayoutState extends State<MainShellLayout> {
           ),
         );
       },
+    );
+  }
+
+  void _showCashierMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: EzoColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: EzoColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: EzoColors.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(LucideIcons.user, color: EzoColors.primary, size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.initialStaff.fullName,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: EzoColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Role: ${widget.initialStaff.role.name.toUpperCase()} • ${_activeProfile.storeName}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: EzoColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 10),
+                ListTile(
+                  leading: const Icon(LucideIcons.lock, color: EzoColors.primary),
+                  title: Text(
+                    'Lock Register & Switch Cashier',
+                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    'Secures your billing counter and requires PIN to unlock',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    widget.onLogout?.call();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.refreshCw, color: EzoColors.error),
+                  title: Text(
+                    'Reset App & Wipe All Data',
+                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14, color: EzoColors.error),
+                  ),
+                  subtitle: Text(
+                    'Clears local database to test fresh signup and onboarding',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmResetStore(context);
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmResetStore(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EzoColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.alertTriangle, color: EzoColors.error, size: 22),
+            const SizedBox(width: 8),
+            Text('Reset Store Data?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'This will permanently delete the current business profile, products, customers, and invoice ledger from this device so you can start completely fresh or sign up a new store.\n\nAre you sure you want to proceed?',
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: EzoColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await widget.onResetAll?.call();
+            },
+            child: const Text('Yes, Wipe & Reset'),
+          ),
+        ],
+      ),
     );
   }
 }

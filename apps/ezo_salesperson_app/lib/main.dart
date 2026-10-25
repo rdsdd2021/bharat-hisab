@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
+import 'src/salesperson_auth_screen.dart';
 import 'src/salesperson_home_screen.dart';
 
 void main() async {
@@ -9,73 +10,62 @@ void main() async {
   await db.initialize();
   final repo = EzoOfflineRepository(db: db);
 
-  final profile = repo.getAllProfiles().isNotEmpty
-      ? repo.getAllProfiles().first
-      : const BusinessProfile(
-          id: 'store_default',
-          storeName: 'EZO Retail Store',
-          legalEntityName: 'EZO Retail',
-          gstin: '27AABCT1234F1Z5',
-          stateCode: '27',
-          stateName: 'Maharashtra',
-          address: 'Main Market',
-          phone: '9876543210',
-          email: 'sales@ezo.com',
-          upiId: 'ezostore@upi',
-          bankName: 'Bank',
-          accountNumber: '1',
-          ifscCode: 'IFSC001',
-        );
-
-  final staff = repo.getAllStaff().isNotEmpty
-      ? repo.getAllStaff().first
-      : StaffMember(
-          id: 'staff_field_1',
-          storeProfileId: profile.id,
-          fullName: 'Anil Kumar (Sales Rep)',
-          phone: '9822003344',
-          pinCode: '1234',
-          role: StaffRole.fieldSalesperson,
-          canEditPrices: false,
-          canDeleteBills: false,
-          canViewProfitReports: false,
-          canCollectUdhaar: true,
-          createdAt: DateTime.now(),
-        );
-
-  runApp(EzoSalespersonApp(
-    repository: repo,
-    storeProfile: profile,
-    staff: staff,
-  ));
+  runApp(EzoSalespersonApp(repository: repo));
 }
 
-class EzoSalespersonApp extends StatelessWidget {
+class EzoSalespersonApp extends StatefulWidget {
   final EzoOfflineRepository repository;
-  final BusinessProfile storeProfile;
-  final StaffMember staff;
 
   const EzoSalespersonApp({
     super.key,
     required this.repository,
-    required this.storeProfile,
-    required this.staff,
   });
+
+  @override
+  State<EzoSalespersonApp> createState() => _EzoSalespersonAppState();
+}
+
+class _EzoSalespersonAppState extends State<EzoSalespersonApp> {
+  BusinessProfile? _activeProfile;
+  StaffMember? _activeStaff;
+
+  @override
+  void initState() {
+    super.initState();
+    final profiles = widget.repository.getAllProfiles();
+    final staffList = widget.repository.getAllStaff();
+    if (profiles.isNotEmpty && staffList.isNotEmpty) {
+      _activeProfile = profiles.first;
+      _activeStaff = staffList.first;
+    }
+  }
+
+  void _onAuthenticated(BusinessProfile profile, StaffMember staff) {
+    setState(() {
+      _activeProfile = profile;
+      _activeStaff = staff;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EZO Sales & Field Collection',
+      title: 'BharatHisab Field Sales & Udhaar Collection',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
-      home: SalespersonHomeScreen(
-        repository: repository,
-        storeProfile: storeProfile,
-        staff: staff,
-      ),
+      home: _activeProfile != null && _activeStaff != null
+          ? SalespersonHomeScreen(
+              repository: widget.repository,
+              storeProfile: _activeProfile!,
+              staff: _activeStaff!,
+            )
+          : SalespersonAuthScreen(
+              repository: widget.repository,
+              onAuthenticated: _onAuthenticated,
+            ),
     );
   }
 }

@@ -119,6 +119,36 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                   ),
                   const Spacer(),
 
+                  // Quick Add Product Button
+                  InkWell(
+                    onTap: () => _showAddProductQuickDialog(context, c),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: EzoColors.primaryLight,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: EzoColors.primary.withValues(alpha: 0.3), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(LucideIcons.plus, size: 14, color: EzoColors.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            '+ Add SKU',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: EzoColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
                   // Custom Fields Button
                   InkWell(
                     onTap: () => _showCustomFieldsDialog(context),
@@ -228,25 +258,27 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         ),
         const Divider(height: 1),
 
-        // Product Grid
+        // Product Grid or Empty State
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.74,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: c.filteredProducts.length,
-            itemBuilder: (context, idx) {
-              final item = c.filteredProducts[idx];
-              final lineIdx = c.cartLines.indexWhere((l) => l.productId == item.id);
-              final qtyInCart = lineIdx != -1 ? c.cartLines[lineIdx].quantity.toInt() : 0;
+          child: c.filteredProducts.isEmpty
+              ? _buildEmptyCatalogView(context, c)
+              : GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.74,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: c.filteredProducts.length,
+                  itemBuilder: (context, idx) {
+                    final item = c.filteredProducts[idx];
+                    final lineIdx = c.cartLines.indexWhere((l) => l.productId == item.id);
+                    final qtyInCart = lineIdx != -1 ? c.cartLines[lineIdx].quantity.toInt() : 0;
 
-              return _buildProductCard(item, qtyInCart, lineIdx, c);
-            },
-          ),
+                    return _buildProductCard(item, qtyInCart, lineIdx, c);
+                  },
+                ),
         ),
 
         // Upsell Recommendation Strip
@@ -976,5 +1008,420 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildEmptyCatalogView(BuildContext context, PosBillingController c) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: EzoColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(LucideIcons.packagePlus, size: 36, color: EzoColors.primary),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Your Store Inventory is Clean & Ready',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: EzoColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No products in catalog yet. You can add your own real products directly, or populate starter Kirana staples with one tap.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                color: EzoColors.textMuted,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: EzoColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(LucideIcons.plus, size: 18),
+              label: Text(
+                'Add Your First Product SKU',
+                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              onPressed: () => _showAddProductQuickDialog(context, c),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                side: const BorderSide(color: EzoColors.border),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(LucideIcons.sparkles, size: 16, color: EzoColors.warning),
+              label: Text(
+                'Quick-Load 10 Essential Staples',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: EzoColors.textSecondary,
+                ),
+              ),
+              onPressed: () => _seedQuickStarterStaples(c),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddProductQuickDialog(BuildContext context, PosBillingController c) {
+    final nameCtrl = TextEditingController();
+    final skuCtrl = TextEditingController();
+    final mrpCtrl = TextEditingController(text: '100');
+    final priceCtrl = TextEditingController(text: '90');
+    final stockCtrl = TextEditingController(text: '50');
+    final hsnCtrl = TextEditingController(text: '1006');
+    double gstVal = 5.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: EzoColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Text(
+            'Quick Add Product SKU',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Product Name',
+                    hintText: 'e.g. Tata Salt 1kg, Milk 500ml',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: skuCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Barcode / SKU Code',
+                    hintText: 'Leave blank to auto-generate',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: mrpCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'MRP (₹)'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: priceCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Sale Price (₹)'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: stockCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Stock Qty'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: hsnCtrl,
+                        decoration: const InputDecoration(labelText: 'HSN/SAC Code'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<double>(
+                  value: gstVal,
+                  decoration: const InputDecoration(labelText: 'GST Tax Slab'),
+                  items: const [
+                    DropdownMenuItem(value: 0.0, child: Text('0% (Exempt)')),
+                    DropdownMenuItem(value: 5.0, child: Text('5% (Groceries/Grains)')),
+                    DropdownMenuItem(value: 12.0, child: Text('12% (Processed Food)')),
+                    DropdownMenuItem(value: 18.0, child: Text('18% (Standard GST)')),
+                    DropdownMenuItem(value: 28.0, child: Text('28% (Luxury/Sin)')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setDlgState(() => gstVal = val);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: EzoColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final prodName = nameCtrl.text.trim();
+                if (prodName.isEmpty) return;
+
+                final mrp = double.tryParse(mrpCtrl.text) ?? 100.0;
+                final sellingPrice = double.tryParse(priceCtrl.text) ?? mrp;
+                final stock = double.tryParse(stockCtrl.text) ?? 50.0;
+                final code = skuCtrl.text.trim().isNotEmpty
+                    ? skuCtrl.text.trim()
+                    : 'SKU-${DateTime.now().millisecondsSinceEpoch % 100000}';
+
+                final item = ProductItem(
+                  id: 'prod_${DateTime.now().millisecondsSinceEpoch}',
+                  name: prodName,
+                  regionalName: '',
+                  skuCode: code,
+                  barcode: code,
+                  hsnSacCode: hsnCtrl.text.trim().isNotEmpty ? hsnCtrl.text.trim() : '1006',
+                  category: 'General',
+                  unit: ItemUnit.pcs,
+                  mrp: mrp,
+                  sellingPrice: sellingPrice,
+                  wholesalePrice: sellingPrice * 0.9,
+                  purchasePrice: sellingPrice * 0.8,
+                  gstPercent: gstVal,
+                  isTaxInclusive: true,
+                  currentStock: stock,
+                  lowStockThreshold: 10.0,
+                );
+
+                await c.repository.upsertProduct(item);
+                c.reloadCatalog();
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Add SKU to Shelf'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _seedQuickStarterStaples(PosBillingController c) async {
+    final staples = [
+      ProductItem(
+        id: 'p_atta_01',
+        name: 'Aashirvaad Shudh Chakki Atta 5kg',
+        regionalName: 'आशीर्वाद आटा ५ कि.ग्रा.',
+        skuCode: 'SKU-ATTA-005',
+        barcode: '8901030383792',
+        hsnSacCode: '1101',
+        category: 'Flour & Grains',
+        unit: ItemUnit.kg,
+        mrp: 290.0,
+        sellingPrice: 265.0,
+        wholesalePrice: 250.0,
+        purchasePrice: 240.0,
+        gstPercent: 0.0,
+        isTaxInclusive: true,
+        currentStock: 45.0,
+        lowStockThreshold: 10.0,
+      ),
+      ProductItem(
+        id: 'p_oil_02',
+        name: 'Fortune Sunlite Refined Sunflower Oil 1L',
+        regionalName: 'फॉर्च्यून सूरजमुखी तेल १ ली.',
+        skuCode: 'SKU-OIL-001',
+        barcode: '8906007280145',
+        hsnSacCode: '1512',
+        category: 'Edible Oils',
+        unit: ItemUnit.ltr,
+        mrp: 165.0,
+        sellingPrice: 148.0,
+        wholesalePrice: 140.0,
+        purchasePrice: 135.0,
+        gstPercent: 5.0,
+        isTaxInclusive: true,
+        currentStock: 60.0,
+        lowStockThreshold: 12.0,
+      ),
+      ProductItem(
+        id: 'p_rice_03',
+        name: 'India Gate Basmati Rice Feast Rozzana 1kg',
+        regionalName: 'इंडिया गेट बासमती चावल १ कि.ग्रा.',
+        skuCode: 'SKU-RICE-001',
+        barcode: '8901030383793',
+        hsnSacCode: '1006',
+        category: 'Rice & Dals',
+        unit: ItemUnit.kg,
+        mrp: 110.0,
+        sellingPrice: 95.0,
+        wholesalePrice: 88.0,
+        purchasePrice: 82.0,
+        gstPercent: 5.0,
+        isTaxInclusive: true,
+        currentStock: 80.0,
+        lowStockThreshold: 15.0,
+      ),
+      ProductItem(
+        id: 'p_salt_04',
+        name: 'Tata Salt Vacuum Evaporated Iodised 1kg',
+        regionalName: 'टाटा नमक १ कि.ग्रा.',
+        skuCode: 'SKU-SALT-001',
+        barcode: '8901030383794',
+        hsnSacCode: '2501',
+        category: 'Spices & Seasoning',
+        unit: ItemUnit.kg,
+        mrp: 28.0,
+        sellingPrice: 26.0,
+        wholesalePrice: 24.0,
+        purchasePrice: 22.0,
+        gstPercent: 0.0,
+        isTaxInclusive: true,
+        currentStock: 120.0,
+        lowStockThreshold: 20.0,
+      ),
+      ProductItem(
+        id: 'p_sugar_05',
+        name: 'Madhur Pure & Hygienic Sugar 1kg',
+        regionalName: 'मधुर चीनी १ कि.ग्रा.',
+        skuCode: 'SKU-SUGAR-001',
+        barcode: '8901030383795',
+        hsnSacCode: '1701',
+        category: 'Spices & Seasoning',
+        unit: ItemUnit.kg,
+        mrp: 55.0,
+        sellingPrice: 50.0,
+        wholesalePrice: 47.0,
+        purchasePrice: 44.0,
+        gstPercent: 5.0,
+        isTaxInclusive: true,
+        currentStock: 90.0,
+        lowStockThreshold: 15.0,
+      ),
+      ProductItem(
+        id: 'p_tea_06',
+        name: 'Tata Tea Gold Leaf Pouch 250g',
+        regionalName: 'टाटा टी गोल्ड २५० ग्रा.',
+        skuCode: 'SKU-TEA-001',
+        barcode: '8901030383796',
+        hsnSacCode: '0902',
+        category: 'Beverages',
+        unit: ItemUnit.pcs,
+        mrp: 160.0,
+        sellingPrice: 145.0,
+        wholesalePrice: 138.0,
+        purchasePrice: 130.0,
+        gstPercent: 5.0,
+        isTaxInclusive: true,
+        currentStock: 40.0,
+        lowStockThreshold: 8.0,
+      ),
+      ProductItem(
+        id: 'p_milk_07',
+        name: 'Amul Taaza Homogenised Toned Milk 500ml',
+        regionalName: 'अमुल ताज़ा दूध ५०० मि.ली.',
+        skuCode: 'SKU-MILK-001',
+        barcode: '8901030383797',
+        hsnSacCode: '0401',
+        category: 'Dairy',
+        unit: ItemUnit.pcs,
+        mrp: 27.0,
+        sellingPrice: 27.0,
+        wholesalePrice: 25.5,
+        purchasePrice: 25.0,
+        gstPercent: 0.0,
+        isTaxInclusive: true,
+        currentStock: 30.0,
+        lowStockThreshold: 5.0,
+      ),
+      ProductItem(
+        id: 'p_bisc_08',
+        name: 'Parle-G Original Gluco Biscuits 250g',
+        regionalName: 'पारले-जी बिस्कुट २५० ग्रा.',
+        skuCode: 'SKU-PARLE-001',
+        barcode: '8901030383798',
+        hsnSacCode: '1905',
+        category: 'Snacks & Biscuits',
+        unit: ItemUnit.pcs,
+        mrp: 25.0,
+        sellingPrice: 23.0,
+        wholesalePrice: 21.0,
+        purchasePrice: 19.5,
+        gstPercent: 18.0,
+        isTaxInclusive: true,
+        currentStock: 75.0,
+        lowStockThreshold: 15.0,
+      ),
+      ProductItem(
+        id: 'p_maggi_09',
+        name: 'Maggi 2-Minute Masala Noodles 280g (Pack of 4)',
+        regionalName: 'मैगी २-मिनट मसाला नूडल्स',
+        skuCode: 'SKU-MAGGI-004',
+        barcode: '8901030383799',
+        hsnSacCode: '1902',
+        category: 'Instant Food',
+        unit: ItemUnit.pcs,
+        mrp: 56.0,
+        sellingPrice: 52.0,
+        wholesalePrice: 48.0,
+        purchasePrice: 45.0,
+        gstPercent: 12.0,
+        isTaxInclusive: true,
+        currentStock: 50.0,
+        lowStockThreshold: 10.0,
+      ),
+      ProductItem(
+        id: 'p_soap_10',
+        name: 'Dettol Original Germ Protection Bathing Soap 75g',
+        regionalName: 'डेटॉल ओरिजिनल साबुन ७५ ग्रा.',
+        skuCode: 'SKU-DETTOL-001',
+        barcode: '8901030383800',
+        hsnSacCode: '3401',
+        category: 'Personal Care',
+        unit: ItemUnit.pcs,
+        mrp: 40.0,
+        sellingPrice: 38.0,
+        wholesalePrice: 35.0,
+        purchasePrice: 32.0,
+        gstPercent: 18.0,
+        isTaxInclusive: true,
+        currentStock: 65.0,
+        lowStockThreshold: 12.0,
+      ),
+    ];
+
+    for (final p in staples) {
+      await c.repository.upsertProduct(p);
+    }
+    c.reloadCatalog();
   }
 }

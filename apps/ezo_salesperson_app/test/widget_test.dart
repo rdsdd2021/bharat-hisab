@@ -40,8 +40,6 @@ void main() {
 
     await tester.pumpWidget(EzoSalespersonApp(
       repository: repo,
-      storeProfile: profile,
-      staff: staff,
     ));
 
     expect(find.byType(EzoSalespersonApp), findsOneWidget);

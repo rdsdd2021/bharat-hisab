@@ -175,9 +175,55 @@ class _KhataScreenState extends State<KhataScreen> with SingleTickerProviderStat
   Widget _buildCustomersList(List<PartyAccount> customers) {
     if (customers.isEmpty) {
       return Center(
-        child: Text(
-          'No customers in Khata yet.',
-          style: GoogleFonts.plusJakartaSans(color: EzoColors.textMuted),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: EzoColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(LucideIcons.bookUser, size: 30, color: EzoColors.primary),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Customers in Khata Yet',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: EzoColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Manage customer credit (udhaar), track balances, and send automated WhatsApp reminders with UPI payment links.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: EzoColors.textMuted,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: EzoColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(LucideIcons.userPlus, size: 16),
+                label: const Text('Add First Customer'),
+                onPressed: () => _showAddPartyDialog(context),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -313,9 +359,55 @@ class _KhataScreenState extends State<KhataScreen> with SingleTickerProviderStat
   Widget _buildSuppliersList(List<PartyAccount> suppliers) {
     if (suppliers.isEmpty) {
       return Center(
-        child: Text(
-          'No suppliers in Khata yet.',
-          style: GoogleFonts.plusJakartaSans(color: EzoColors.textMuted),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEFF6FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(LucideIcons.truck, size: 30, color: Color(0xFF2563EB)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Suppliers in Khata Yet',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: EzoColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Record vendor purchase invoices, track wholesale payables, and manage payment settlements with your suppliers.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: EzoColors.textMuted,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(LucideIcons.truck, size: 16),
+                label: const Text('Add First Supplier'),
+                onPressed: () => _showAddPartyDialog(context),
+              ),
+            ],
+          ),
         ),
       );
     }

@@ -10,12 +10,16 @@ class SettingsLicenseScreen extends StatefulWidget {
   final EzoOfflineRepository repository;
   final BusinessProfile storeProfile;
   final Function(BusinessProfile) onProfileUpdated;
+  final VoidCallback? onLogout;
+  final Future<void> Function()? onResetAll;
 
   const SettingsLicenseScreen({
     super.key,
     required this.repository,
     required this.storeProfile,
     required this.onProfileUpdated,
+    this.onLogout,
+    this.onResetAll,
   });
 
   @override
@@ -349,6 +353,70 @@ class _SettingsLicenseScreenState extends State<SettingsLicenseScreen> {
                 }).toList(),
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Session, Cashier & Clean Slate Actions
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: EzoColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: EzoColors.border, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.shieldAlert, color: EzoColors.error, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Session & Store Management',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15, color: EzoColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Lock your POS register for staff shift handovers, or reset the device database to sign up from a clean slate.',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, color: EzoColors.textMuted),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(LucideIcons.lock, size: 16),
+                          label: const Text('Lock Counter / Logout'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: EzoColors.primary),
+                            foregroundColor: EzoColors.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () => widget.onLogout?.call(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(LucideIcons.refreshCw, size: 16),
+                          label: const Text('Reset Clean Slate'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: EzoColors.error,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () => _confirmResetDialog(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -459,6 +527,44 @@ class _SettingsLicenseScreenState extends State<SettingsLicenseScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmResetDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EzoColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.alertTriangle, color: EzoColors.error, size: 22),
+            const SizedBox(width: 8),
+            Text('Wipe & Reset Store Slate?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          'This will completely clear your local store profile, all product inventory, and customer ledgers from this device.\n\nYou will be redirected to the BharatHisab setup/signup screen to start clean or configure a new business.\n\nProceed?',
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: EzoColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await widget.onResetAll?.call();
+            },
+            child: const Text('Yes, Erase & Reset'),
+          ),
+        ],
       ),
     );
   }
