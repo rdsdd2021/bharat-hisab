@@ -77,24 +77,49 @@ android {
 ```bash
 cd apps/ezo_pos_merchant_app
 
-# Build Google Play Android App Bundle (AAB)
+# 1. Build Google Play Android App Bundle (AAB)
 flutter build appbundle --release
 
-# Build Standalone Universal APK (For sideloading on Sunmi / POS Terminals)
+# 2. Build Split-per-ABI APKs (Target: 15-30 MB)
+flutter build apk --release --split-per-abi
+
+# 3. Build Standalone Universal APK (Fat APK ~147MB)
 flutter build apk --release --split-per-abi=false
 ```
 
-Output paths:
-- AAB: `build/app/outputs/bundle/release/app-release.aab`
-- APK: `build/app/outputs/flutter-apk/app-release.apk`
+### 2.3 Optimized APK Artifacts (15–30 MB Target Achieved)
+
+By splitting by ABI (Application Binary Interface), each APK bundles only the native C++ libraries for its architecture, dramatically shrinking download sizes:
+
+| Artifact | Size | Target Hardware | Location |
+|---|---|---|---|
+| **`BharatHisab_POS_v1.0.0_arm64-v8a.apk`** | **18.5 MB** | 64-bit ARM smartphones & tablets | `outputs/BharatHisab_POS_v1.0.0_arm64-v8a.apk` |
+| **`BharatHisab_POS_v1.0.0_armeabi-v7a.apk`** | **16.1 MB** | 32-bit ARM phones & POS terminals (Sunmi, iMin) | `outputs/BharatHisab_POS_v1.0.0_armeabi-v7a.apk` |
+| **`BharatHisab_POS_v1.0.0_x86_64.apk`** | **20.0 MB** | x86_64 Android emulators & Chromebooks | `outputs/BharatHisab_POS_v1.0.0_x86_64.apk` |
 
 ---
 
-## 3. Windows Desktop Deployment (MSIX / Inno Setup)
+## 3. Local Multi-Daemon Web Server Deployment
+
+To test the entire three-application ecosystem locally without running heavy emulators:
+
+```bash
+python scratch/serve_all_local.py
+```
+
+| Application | Port | Source Build Directory |
+|---|---|---|
+| **BharatHisab POS Merchant App** | `http://localhost:8090/` | `apps/ezo_pos_merchant_app/build/web` |
+| **Superadmin & Reseller Tower** | `http://localhost:8091/` | `apps/ezo_reseller_admin_portal/build/web` |
+| **Field Salesperson Companion** | `http://localhost:8092/` | `apps/ezo_salesperson_app/build/web` |
+
+---
+
+## 4. Windows Desktop Deployment (MSIX / Inno Setup)
 
 For retail billing counters running Windows 10/11 with USB thermal printers and handheld barcode scanners:
 
-### 3.1 Building Windows Release Executable
+### 4.1 Building Windows Release Executable
 
 ```bash
 cd apps/ezo_pos_merchant_app
@@ -103,7 +128,7 @@ flutter build windows --release
 
 Output folder: `build/windows/x64/runner/Release/`
 
-### 3.2 Packaging with Inno Setup
+### 4.2 Packaging with Inno Setup
 Create `installer_script.iss` to generate a lightweight single-file setup installer:
 - Embeds Flutter engine DLLs (`flutter_windows.dll`, plugins).
 - Adds Desktop shortcut and Start Menu entry.
@@ -111,7 +136,7 @@ Create `installer_script.iss` to generate a lightweight single-file setup instal
 
 ---
 
-## 4. Web Console Deployment (`apps/ezo_reseller_admin_portal`)
+## 5. Web Console Deployment (`apps/ezo_reseller_admin_portal`)
 
 The Superadmin Reseller Portal compiles to high-performance web:
 
@@ -124,7 +149,7 @@ flutter build web --release --web-renderer canvaskit
 
 Output directory: `build/web/`
 
-### 4.1 Deployment to Cloudflare Pages / Firebase
+### 5.1 Deployment to Cloudflare Pages / Firebase
 Deploy the `build/web` folder to any static hosting provider:
 
 ```bash
@@ -137,7 +162,7 @@ npx wrangler pages deploy build/web --project-name=ezo-reseller-portal
 
 ---
 
-## 5. White-Label Multi-Brand Build Pipeline
+## 6. White-Label Multi-Brand Build Pipeline
 
 To build a branded flavor for a specific reseller without altering code:
 

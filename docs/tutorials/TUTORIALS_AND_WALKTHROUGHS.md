@@ -4,32 +4,44 @@ This document contains 5 hands-on tutorials guiding you from initial store setup
 
 ---
 
-## Tutorial 1: Quickstart — Your First Bill in 60 Seconds
+## Tutorial 1: Quickstart — Creating a Real Store & First Bill from Clean Slate
 
 ### Objective:
-Take an out-of-the-box installation and generate your first customer bill with thermal printout.
+Set up a clean merchant account, add a real SKU at the counter, and generate your first customer bill with thermal printout.
 
 ### Steps:
-1. **Launch the Onboarding Wizard**:
-   - On first startup, the **Industry Setup Wizard** appears automatically.
-   - Select **"Kirana & Supermarket"** (or your business vertical) $\rightarrow$ Tap **"Continue to Store Details"**.
-2. **Configure Your Store Identity**:
-   - Store Name: `Apna Super Bazaar`
-   - WhatsApp Phone: `9876543210`
-   - State: `27 - Maharashtra`
-   - Tax Mode: Toggle **"Enable Regular GST Invoicing"** to ON.
-   - Tap **"Continue to Hardware"**.
-3. **Select Hardware Profile**:
-   - Select **"3-Inch Bada (80mm)"** Thermal Printer.
-   - Check **"Print Dynamic UPI QR"** $\rightarrow$ Tap **"Review & Launch Store"**.
-4. **Seed Sample Catalog**:
-   - Review your pre-configured settings and tap **"🚀 Launch Store & Seed Catalog"**.
-5. **Bill an Item**:
-   - On the POS Billing Screen, tap **"Fortune Sunlite Oil 1L"** and **"Tata Salt 1kg"**.
-   - Notice the cart automatically updates: Subtotal, CGST, SGST, Round-off, and **You Saved Rs. 28.00**.
-6. **Settle Transaction**:
-   - Tap **"Settle (F12)"** $\rightarrow$ Select **Cash** $\rightarrow$ Enter Received: `₹250`.
-   - The app confirms change: `₹22.00` and generates the thermal receipt.
+1. **Launch & Account Sign Up**:
+   - Open BharatHisab on Android or browser ([http://localhost:8090](http://localhost:8090)).
+   - In the **Create Merchant Business Account** form:
+     - Store Name: `Shree Ganesh Supermarket`
+     - Owner Name: `Ramanuj Sarkar`
+     - Mobile Phone: `9876543210`
+     - 4-Digit Quick PIN: `1234`
+     - State: `27 - Maharashtra`
+     - Vertical: `Kirana & Supermarket`
+     - Check: **"Start with 100% Clean Slate (0 products, clean ledger)"**
+     - Tap **"Launch Business Counter"**.
+2. **Arrive at Clean Counter**:
+   - You arrive at your billing screen with **0 dummy items**.
+3. **Add First Product SKU**:
+   - Tap **`+ Add Your First Product SKU`** on screen (or **`+ Add SKU`** in the search toolbar).
+   - Name: `Tata Salt 1kg`
+   - Barcode/SKU: `8901030383794` (or leave blank to auto-generate)
+   - MRP: `₹28`
+   - Sale Price: `₹26`
+   - GST Slab: `0% (Exempt)`
+   - Stock Qty: `50`
+   - Tap **"Add SKU to Shelf"**. The product immediately appears on your counter!
+   *(Optional: If you ever want instant test data, tap `⚡ Quick-Load 10 Essential Staples` to load 10 common items).*
+4. **Bill the Item**:
+   - Tap `Tata Salt 1kg` to add it to the cart.
+   - Notice the cart automatically updates: Subtotal, CGST, SGST, Round-off, and **You Saved ₹2.00**.
+5. **Settle Transaction**:
+   - Tap **"Charge / Bill (F12)"** $\rightarrow$ Select **Cash** $\rightarrow$ Enter Received: `₹50`.
+   - The app computes change: `₹24.00` and generates the thermal receipt.
+6. **Lock Register or Reset Slate**:
+   - Tap the Cashier profile badge on the top bar $\rightarrow$ **"Lock Register & Switch Cashier"**.
+   - To test onboarding from scratch again, go to **Settings** $\rightarrow$ **Session & Store Management** $\rightarrow$ **"Reset Clean Slate"**.
 
 ---
 

@@ -4,6 +4,31 @@ A practical, step-by-step operator guide for Store Managers, Counter Cashiers, a
 
 ---
 
+## 0. First Launch, Account Registration & Clean Slate Setup
+
+### 0.1 Creating Your Real Business Account
+When you first open BharatHisab on your Android terminal, tablet, or web browser ([http://localhost:8090](http://localhost:8090)), you are presented with the **Merchant Account Setup Portal**:
+1. **Shop / Store Name**: Enter your commercial trading name (e.g. *Shree Ganesh Supermarket*).
+2. **Owner / Manager Name**: Full name of the primary administrator.
+3. **Mobile Phone**: 10-digit phone used for SMS/WhatsApp receipts and UPI receipts.
+4. **4-Digit Quick PIN**: Used to unlock the cashier register and access managerial settings.
+5. **State / UT**: Crucial for Indian GST rules—defines whether transactions are Intra-State (CGST + SGST) or Inter-State (IGST).
+6. **Industry Vertical**: Choose Kirana, Restaurant, Electronics, Apparel, Pharmacy, or General Retail.
+7. **Clean Slate Choice**: Keep **"Start with 100% Clean Slate (0 products, clean ledger)"** checked to start with an authentic empty store.
+
+### 0.2 Adding Products Right at the Counter
+If you start clean, you do not need to navigate deep into settings to stock your shelf:
+- **Empty Counter Card**: Tap **`+ Add Your First Product SKU`** directly on the billing screen.
+- **Header Action Button**: Tap the **`+ Add SKU`** pill in the search bar.
+- **Product Parameters**: Enter Product Name, Barcode/SKU, MRP, Selling Price, Stock Qty, and GST Tax Slab (0%, 5%, 12%, 18%, 28%).
+- **Quick-Load Starter Staples**: If you want instant grocery staples for staff training, tap **`⚡ Quick-Load 10 Essential Staples`** to seed 10 common items (Atta, Oil, Rice, Salt, Sugar, Tea, Milk, Biscuits, Maggi, Soap).
+
+### 0.3 Shift Lock & Resetting the Store Slate
+- **Lock Register**: Tap the Cashier profile badge in the top navigation bar and select **"Lock Register & Switch Cashier"**.
+- **Wipe Slate (Testing Mode)**: Go to **Settings** $\rightarrow$ **Session & Store Management** $\rightarrow$ Tap **"Reset Clean Slate"**. Confirming erases local data and brings you back to the signup screen to test fresh store creation.
+
+---
+
 ## 1. Daily Cashier Routine & Shift Opening
 
 ### 1.1 Starting Your Shift

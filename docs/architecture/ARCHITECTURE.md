@@ -148,7 +148,31 @@ The app evaluates `license.isValid` and `license.daysRemaining` on app startup a
 
 ---
 
-## 4. Role-Based Access Control (RBAC) Matrix
+## 4. Role-Based Access Control (RBAC) & Authentication Lifecycle
+
+### 4.1 Authentication Architecture & Clean-State Session Management
+
+To ensure zero simulated or prototype data leaks into real production environments, the application enforces strict lifecycle controls:
+
+1. **Merchant Onboarding (`MerchantAuthScreen`)**:
+   - On initial launch, the system checks if any business profiles exist.
+   - If empty, the app immediately routes to the 2-tab Merchant Auth Portal.
+   - **No forced dummy data seeding** occurs without explicit user consent.
+   - The user selects their exact Industry Vertical, State code, GST mode, and chooses whether to start with a **100% clean store (0 items)** or opt-in to starter demo staples.
+
+2. **Cashier Shift Lock & Session Invalidation (`onLogout`)**:
+   - Cashiers can lock their register via the top navigation bar avatar pill.
+   - Shifts require the cashier's 4-digit PIN to resume billing operations.
+
+3. **Danger Zone Slate Reset (`onResetAll`)**:
+   - Available under Store Settings and the Cashier menu.
+   - Executing a wipe atomically clears all SQLite/Hive tables (`clearAll()`) and redirects back to the account creation screen, enabling complete testing cycles.
+
+4. **Superadmin & Field Companion Gates**:
+   - **Superadmin Portal (`apps/ezo_reseller_admin_portal`)**: Gated via `SuperadminAuthScreen` requiring Master Admin credentials (`admin@bharathisab.com` / `889900`) or agency registration.
+   - **Salesperson App (`apps/ezo_salesperson_app`)**: Gated via `SalespersonAuthScreen` requiring merchant shop association and field representative PIN.
+
+### 4.2 RBAC Permission Matrix
 
 To prevent cashier fraud and counter pilferage, EZO enforces granular permissions across 4 staff tiers:
 

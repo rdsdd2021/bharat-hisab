@@ -6,15 +6,26 @@ This guide instructs SaaS resellers, franchisors, and application owners on admi
 
 ## 1. The Reseller Control Tower Console
 
-The portal is a high-performance web and desktop console designed for executive operations:
+The portal is a high-performance web and desktop console designed for executive operations, running locally on [http://localhost:8091](http://localhost:8091):
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
-│ 🛡️ EZO POS Reseller & Superadmin Control Tower          [Issue New Key]  │
+│ 🛡️ BharatHisab Control Tower           [Issue New Key]  [Sign Out]        │
 ├───────────────────────────────────────────────────────────────────────────┤
 │ [ Tab 1: Cloud Fleet Analytics ] [ Tab 2: Tenant Licenses ] [ Tab 3: White-Label ]│
 └───────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 1.1 Master Authentication & Agency Registration
+Access to the Control Tower is gated behind `SuperadminAuthScreen`:
+- **Master Sign In**:
+  - Email: `admin@bharathisab.com`
+  - Master Security PIN: `889900`
+- **Register New Reseller / Agency**:
+  - Agency Name (e.g. *Apex Commercial Systems*)
+  - Primary Contact Email & 6-digit Master PIN
+  - Agency Authorization Key
+- **Sign Out**: Tap the logout icon in the top right to end the session and return to the login gate.
 
 ---
 
