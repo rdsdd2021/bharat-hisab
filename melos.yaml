@@ -1,5 +1,5 @@
-name: ezo_pos_workspace
-repository: https://github.com/ezo/ezo_pos_workspace
+name: bharat_hisab_workspace
+repository: https://github.com/rdsdd2021/bharat-hisab
 
 packages:
   - apps/**
