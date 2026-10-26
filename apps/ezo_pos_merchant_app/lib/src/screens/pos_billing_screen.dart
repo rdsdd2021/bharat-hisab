@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
-import 'package:ezo_l10n_vernacular/ezo_l10n_vernacular.dart';
 import '../controllers/pos_billing_controller.dart';
 import '../theme/ezo_theme.dart';
 import 'receipt_preview_modal.dart';
@@ -18,50 +18,97 @@ class PosBillingScreen extends StatefulWidget {
 
 class _PosBillingScreenState extends State<PosBillingScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _rootFocusNode = FocusNode();
+  String _hardwareScanBuffer = '';
+  DateTime _lastScanKeystroke = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _rootFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _rootFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onKeyReceived(KeyEvent event, PosBillingController c) {
+    if (event is! KeyDownEvent) return;
+
+    final now = DateTime.now();
+    // External barcode scanner sends burst of keys in < 400ms followed by Enter
+    if (now.difference(_lastScanKeystroke).inMilliseconds > 400) {
+      _hardwareScanBuffer = '';
+    }
+    _lastScanKeystroke = now;
+
+    if (event.logicalKey == LogicalKeyboardKey.enter) {
+      if (_hardwareScanBuffer.trim().isNotEmpty) {
+        final code = _hardwareScanBuffer.trim();
+        _hardwareScanBuffer = '';
+        _handleBarcodeScan(code, c);
+      }
+    } else {
+      final char = event.character;
+      if (char != null && char.isNotEmpty && RegExp(r'[0-9a-zA-Z\-_]').hasMatch(char)) {
+        _hardwareScanBuffer += char;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
     final isDesktop = MediaQuery.of(context).size.width >= 700;
 
-    return ListenableBuilder(
-      listenable: c,
-      builder: (context, _) {
-        if (isDesktop) {
-          return Scaffold(
-            backgroundColor: EzoColors.background,
-            body: Row(
-              children: [
-                Expanded(flex: 6, child: _buildCatalogSection(c)),
-                const VerticalDivider(width: 1, color: EzoColors.border),
-                Expanded(flex: 4, child: _buildCartSection(c)),
-              ],
-            ),
-          );
-        } else {
-          // Mobile Layout
-          return Scaffold(
-            backgroundColor: EzoColors.background,
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: c.cartLines.isNotEmpty ? 76 : 0),
-                    child: _buildCatalogSection(c),
+    return KeyboardListener(
+      focusNode: _rootFocusNode,
+      autofocus: true,
+      onKeyEvent: (event) => _onKeyReceived(event, c),
+      child: ListenableBuilder(
+        listenable: c,
+        builder: (context, _) {
+          if (isDesktop) {
+            return Scaffold(
+              backgroundColor: EzoColors.background,
+              body: Row(
+                children: [
+                  Expanded(flex: 6, child: _buildCatalogSection(c)),
+                  const VerticalDivider(width: 1, color: EzoColors.border),
+                  Expanded(flex: 4, child: _buildCartSection(c)),
+                ],
+              ),
+            );
+          } else {
+            // Mobile Layout
+            return Scaffold(
+              backgroundColor: EzoColors.background,
+              body: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: c.cartLines.isNotEmpty ? 76 : 0),
+                      child: _buildCatalogSection(c),
+                    ),
                   ),
-                ),
-                if (c.cartLines.isNotEmpty)
-                  Positioned(
-                    left: 12,
-                    right: 12,
-                    bottom: 12,
-                    child: _buildMobileFloatingCartBar(c),
-                  ),
-              ],
-            ),
-          );
-        }
-      },
+                  if (c.cartLines.isNotEmpty)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      child: _buildMobileFloatingCartBar(c),
+                    ),
+                ],
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -178,6 +225,68 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: EzoColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Parked Bills / Held Queue Indicator
+                  if (c.heldSales.isNotEmpty) ...[
+                    InkWell(
+                      onTap: () => _showParkedBillsModal(context, c),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: EzoColors.warningBg,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: EzoColors.warning.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(LucideIcons.pauseCircle, size: 13, color: EzoColors.warning),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Held (${c.heldSales.length})',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: EzoColors.warning,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // Kirana Quick Numpad Button
+                  InkWell(
+                    onTap: () => _showKiranaNumpadModal(context, c),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(LucideIcons.calculator, size: 13, color: Colors.purple),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Numpad',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.purple,
                             ),
                           ),
                         ],
@@ -867,11 +976,24 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                                 color: EzoColors.textPrimary,
                               ),
                             ),
-                            Text(
-                              '₹${line.unitSellingPrice.toStringAsFixed(2)} × ${line.quantity.toInt()} = ₹${line.totalAmount.toStringAsFixed(2)}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: EzoColors.textMuted,
+                            const SizedBox(height: 2),
+                            InkWell(
+                              onTap: () => _showEditLinePriceDialog(context, c, idx, line),
+                              borderRadius: BorderRadius.circular(4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '₹${line.unitSellingPrice.toStringAsFixed(2)} × ${line.quantity.toInt()} = ₹${line.totalAmount.toStringAsFixed(2)}',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      color: EzoColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(LucideIcons.pencil, size: 10, color: EzoColors.primary),
+                                ],
                               ),
                             ),
                           ],
@@ -910,6 +1032,14 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, size: 15, color: EzoColors.error),
+                        tooltip: 'Remove Item',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        onPressed: () => c.removeCartLine(idx),
                       ),
                     ],
                   ),
@@ -970,22 +1100,54 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Dual Action Buttons
+                // 3 Action Buttons: Hold Sale, Print Bill, Udhaar
                 Row(
                   children: [
+                    // Hold Sale Button
                     Expanded(
-                      flex: 6,
-                      child: ElevatedButton.icon(
+                      flex: 3,
+                      child: OutlinedButton.icon(
                         onPressed: () {
-                          final invoice = c.buildCurrentInvoice();
-                          Navigator.pop(context);
-                          ReceiptPreviewModal.show(
-                            context,
-                            invoice: invoice,
-                            storeProfile: c.currentProfile,
-                          );
+                          final success = c.holdCurrentSale();
+                          if (success) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('⏸️ Bill parked in queue! (${c.heldSales.length} held)'),
+                                backgroundColor: EzoColors.warning,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         },
-                        icon: const Icon(LucideIcons.printer, size: 16),
+                        icon: const Icon(LucideIcons.pauseCircle, size: 14),
+                        label: const Text('Hold'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: EzoColors.warning,
+                          side: const BorderSide(color: EzoColors.warning),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Print & Commit Button
+                    Expanded(
+                      flex: 5,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final invoice = await c.commitInvoice();
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ReceiptPreviewModal.show(
+                              context,
+                              invoice: invoice,
+                              storeProfile: c.currentProfile,
+                            );
+                          }
+                        },
+                        icon: const Icon(LucideIcons.printer, size: 15),
                         label: const Text('Print Bill'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: EzoColors.primary,
@@ -995,24 +1157,36 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
+
+                    // Udhaar Khata Button
                     Expanded(
                       flex: 4,
                       child: ElevatedButton.icon(
                         onPressed: () async {
+                          if (c.selectedCustomer == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please link a Customer before issuing Udhaar credit!'),
+                                backgroundColor: EzoColors.warning,
+                              ),
+                            );
+                            _showCustomerSelectorModal(context, c);
+                            return;
+                          }
                           c.setSettlementMode(SettlementMode.creditUdhaar);
                           await c.commitInvoice();
                           if (context.mounted) {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Bill saved and recorded in Customer Khata!'),
-                                backgroundColor: Color(0xFFEA580C),
+                              SnackBar(
+                                content: Text('Udhaar bill saved to ${c.selectedCustomer?.name ?? "Customer"} Khata!'),
+                                backgroundColor: const Color(0xFFEA580C),
                               ),
                             );
                           }
                         },
-                        icon: const Icon(LucideIcons.bookUser, size: 15),
+                        icon: const Icon(LucideIcons.bookUser, size: 14),
                         label: const Text('Udhaar'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFEA580C),
@@ -1347,6 +1521,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'आशीर्वाद आटा ५ कि.ग्रा.',
         skuCode: 'SKU-ATTA-005',
         barcode: '8901030383792',
+        shortCode: '3',
         hsnSacCode: '1101',
         category: 'Flour & Grains',
         unit: ItemUnit.kg,
@@ -1365,6 +1540,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'फॉर्च्यून सूरजमुखी तेल १ ली.',
         skuCode: 'SKU-OIL-001',
         barcode: '8906007280145',
+        shortCode: '5',
         hsnSacCode: '1512',
         category: 'Edible Oils',
         unit: ItemUnit.ltr,
@@ -1383,6 +1559,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'इंडिया गेट बासमती चावल १ कि.ग्रा.',
         skuCode: 'SKU-RICE-001',
         barcode: '8901030383793',
+        shortCode: '2',
         hsnSacCode: '1006',
         category: 'Rice & Dals',
         unit: ItemUnit.kg,
@@ -1401,6 +1578,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'टाटा नमक १ कि.ग्रा.',
         skuCode: 'SKU-SALT-001',
         barcode: '8901030383794',
+        shortCode: '4',
         hsnSacCode: '2501',
         category: 'Spices & Seasoning',
         unit: ItemUnit.kg,
@@ -1419,6 +1597,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'मधुर चीनी १ कि.ग्रा.',
         skuCode: 'SKU-SUGAR-001',
         barcode: '8901030383795',
+        shortCode: '1',
         hsnSacCode: '1701',
         category: 'Spices & Seasoning',
         unit: ItemUnit.kg,
@@ -1437,6 +1616,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'टाटा टी गोल्ड २५० ग्रा.',
         skuCode: 'SKU-TEA-001',
         barcode: '8901030383796',
+        shortCode: '10',
         hsnSacCode: '0902',
         category: 'Beverages',
         unit: ItemUnit.pcs,
@@ -1455,6 +1635,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'अमुल ताज़ा दूध ५०० मि.ली.',
         skuCode: 'SKU-MILK-001',
         barcode: '8901030383797',
+        shortCode: '6',
         hsnSacCode: '0401',
         category: 'Dairy',
         unit: ItemUnit.pcs,
@@ -1473,6 +1654,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'पारले-जी बिस्कुट २५० ग्रा.',
         skuCode: 'SKU-PARLE-001',
         barcode: '8901030383798',
+        shortCode: '7',
         hsnSacCode: '1905',
         category: 'Snacks & Biscuits',
         unit: ItemUnit.pcs,
@@ -1491,6 +1673,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'मैगी २-मिनट मसाला नूडल्स',
         skuCode: 'SKU-MAGGI-004',
         barcode: '8901030383799',
+        shortCode: '8',
         hsnSacCode: '1902',
         category: 'Instant Food',
         unit: ItemUnit.pcs,
@@ -1509,6 +1692,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         regionalName: 'डेटॉल ओरिजिनल साबुन ७५ ग्रा.',
         skuCode: 'SKU-DETTOL-001',
         barcode: '8901030383800',
+        shortCode: '9',
         hsnSacCode: '3401',
         category: 'Personal Care',
         unit: ItemUnit.pcs,
@@ -1533,15 +1717,9 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
     final code = rawCode.trim();
     if (code.isEmpty) return;
 
-    final allProds = c.repository.getAllProducts();
-    // Search exact barcode or SKU code match (case-insensitive)
-    final matched = allProds.where((p) {
-      return p.barcode.trim() == code ||
-          p.skuCode.trim().toLowerCase() == code.toLowerCase();
-    }).toList();
+    final product = c.findProductByCode(code);
 
-    if (matched.isNotEmpty) {
-      final product = matched.first;
+    if (product != null) {
       c.addProductToCart(product);
       _searchCtrl.clear();
       c.setSearchQuery('');
@@ -2371,6 +2549,681 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
             child: const Text('Save & Link to Bill'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showEditLinePriceDialog(
+    BuildContext context,
+    PosBillingController c,
+    int index,
+    InvoiceLineItem line,
+  ) {
+    final canEdit = c.currentStaff?.canEditPrices ?? true;
+    if (!canEdit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Your staff role does not have permission to override prices at the counter.'),
+          backgroundColor: EzoColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final priceCtrl = TextEditingController(text: line.unitSellingPrice.toStringAsFixed(2));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: EzoColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Row(
+            children: [
+              const Icon(LucideIcons.tag, size: 18, color: EzoColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Edit Selling Rate',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                line.itemName,
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              Text(
+                'Original MRP: ₹${line.mrp.toStringAsFixed(2)}  •  Current: ₹${line.unitSellingPrice.toStringAsFixed(2)}',
+                style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: priceCtrl,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'New Selling Price (₹) *',
+                  prefixText: '₹ ',
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Quick Rate Shortcuts:',
+                style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: EzoColors.textMuted),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  ActionChip(
+                    label: const Text('5% OFF'),
+                    labelStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                    onPressed: () {
+                      setDlgState(() {
+                        priceCtrl.text = (line.mrp * 0.95).toStringAsFixed(2);
+                      });
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('10% OFF'),
+                    labelStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                    onPressed: () {
+                      setDlgState(() {
+                        priceCtrl.text = (line.mrp * 0.90).toStringAsFixed(2);
+                      });
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Wholesale (-15%)'),
+                    labelStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                    onPressed: () {
+                      setDlgState(() {
+                        priceCtrl.text = (line.mrp * 0.85).toStringAsFixed(2);
+                      });
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Reset to MRP'),
+                    labelStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                    onPressed: () {
+                      setDlgState(() {
+                        priceCtrl.text = line.mrp.toStringAsFixed(2);
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: EzoColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                final newRate = double.tryParse(priceCtrl.text.trim());
+                if (newRate != null && newRate >= 0) {
+                  c.updateCartLinePrice(index, newRate);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Updated rate for ${line.itemName} to ₹${newRate.toStringAsFixed(2)}'),
+                      backgroundColor: EzoColors.success,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Apply Rate'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showKiranaNumpadModal(BuildContext context, PosBillingController c) {
+    String numpadCode = '';
+    double selectedQty = 1.0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: EzoColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setPadState) {
+          final matchedProduct = numpadCode.isNotEmpty ? c.findProductByCode(numpadCode) : null;
+
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            padding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: EzoColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.calculator, size: 18, color: Colors.purple),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Kirana Numpad (त्वरित शॉर्ट-कोड)',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: EzoColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(LucideIcons.x, size: 18, color: EzoColors.textMuted),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Input Display & Live Match Preview Box
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: matchedProduct != null
+                          ? const Color(0xFFF0FDF4)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: matchedProduct != null
+                            ? EzoColors.success
+                            : EzoColors.border,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: EzoColors.border),
+                          ),
+                          child: Center(
+                            child: Text(
+                              numpadCode.isEmpty ? '—' : numpadCode,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: matchedProduct != null
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      matchedProduct.name,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: EzoColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${matchedProduct.sellingPrice.toStringAsFixed(0)} / ${matchedProduct.unit.label}  •  Stock: ${matchedProduct.currentStock.toStringAsFixed(0)}',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: EzoColors.success,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  numpadCode.isEmpty
+                                      ? 'Type 1-4 digit short-code (e.g. 1, 2, 3)'
+                                      : 'No product matched with code #$numpadCode',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    color: EzoColors.textMuted,
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Quantity Multipliers Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Quantity Multiplier:',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w600, color: EzoColors.textSecondary),
+                      ),
+                      Wrap(
+                        spacing: 4,
+                        children: [0.5, 1.0, 2.0, 5.0].map((q) {
+                          final isSel = selectedQty == q;
+                          return ChoiceChip(
+                            label: Text(q == 0.5 ? '½' : '${q.toInt()}x'),
+                            selected: isSel,
+                            selectedColor: Colors.purple,
+                            labelStyle: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isSel ? Colors.white : EzoColors.textPrimary,
+                            ),
+                            onSelected: (s) => setPadState(() => selectedQty = q),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 3x4 Keypad Grid
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 2.1,
+                    children: [
+                      _buildNumpadDigit('1', () => setPadState(() => numpadCode += '1')),
+                      _buildNumpadDigit('2', () => setPadState(() => numpadCode += '2')),
+                      _buildNumpadDigit('3', () => setPadState(() => numpadCode += '3')),
+                      _buildNumpadDigit('4', () => setPadState(() => numpadCode += '4')),
+                      _buildNumpadDigit('5', () => setPadState(() => numpadCode += '5')),
+                      _buildNumpadDigit('6', () => setPadState(() => numpadCode += '6')),
+                      _buildNumpadDigit('7', () => setPadState(() => numpadCode += '7')),
+                      _buildNumpadDigit('8', () => setPadState(() => numpadCode += '8')),
+                      _buildNumpadDigit('9', () => setPadState(() => numpadCode += '9')),
+                      // Clear
+                      InkWell(
+                        onTap: () => setPadState(() => numpadCode = ''),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFCA5A5)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'CLEAR',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: EzoColors.error,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      _buildNumpadDigit('0', () => setPadState(() => numpadCode += '0')),
+                      // Add / OK
+                      InkWell(
+                        onTap: () {
+                          if (matchedProduct != null) {
+                            c.addProductToCart(matchedProduct, qty: selectedQty);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Added ${selectedQty}x ${matchedProduct.name} to bill!'),
+                                backgroundColor: EzoColors.success,
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                            setPadState(() {
+                              numpadCode = '';
+                              selectedQty = 1.0;
+                            });
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: matchedProduct != null ? EzoColors.success : EzoColors.border,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '↵ ADD',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Kirana Short-Code Quick Cheatsheet
+                  Text(
+                    'Tap Any Kirana Staple Short-Code:',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: EzoColors.textMuted),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _buildKiranaQuickCodeChip('1: Sugar', '1', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('2: Rice', '2', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('3: Atta', '3', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('4: Salt', '4', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('5: Oil', '5', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('6: Milk', '6', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('7: Parle-G', '7', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('8: Maggi', '8', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('9: Soap', '9', setPadState, (c) => numpadCode = c),
+                      _buildKiranaQuickCodeChip('10: Tea', '10', setPadState, (c) => numpadCode = c),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNumpadDigit(String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: EzoColors.surfaceSecondary,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: EzoColors.border),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: EzoColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKiranaQuickCodeChip(
+    String label,
+    String code,
+    StateSetter setPadState,
+    void Function(String) setCode,
+  ) {
+    return ActionChip(
+      backgroundColor: Colors.purple.withValues(alpha: 0.08),
+      side: BorderSide(color: Colors.purple.withValues(alpha: 0.2)),
+      label: Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.purple,
+        ),
+      ),
+      onPressed: () {
+        setPadState(() {
+          setCode(code);
+        });
+      },
+    );
+  }
+
+  void _showParkedBillsModal(BuildContext context, PosBillingController c) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: EzoColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setQueueState) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: EzoColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.pauseCircle, size: 20, color: EzoColors.warning),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Parked / Held Bills Queue (${c.heldSales.length})',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: EzoColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, size: 18, color: EzoColors.textMuted),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              if (c.heldSales.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Icon(LucideIcons.pauseCircle, size: 40, color: EzoColors.textMuted),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No parked bills in queue',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: EzoColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          'You can hold an active bill to serve the next customer without losing cart items.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: EzoColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: c.heldSales.length,
+                    separatorBuilder: (context, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, idx) {
+                      final held = c.heldSales[idx];
+                      final timeStr =
+                          '${held.heldAt.hour.toString().padLeft(2, '0')}:${held.heldAt.minute.toString().padLeft(2, '0')}';
+
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: EzoColors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: EzoColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: EzoColors.warningBg,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(LucideIcons.receipt, color: EzoColors.warning, size: 18),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        held.notes,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: EzoColors.textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        timeStr,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          color: EzoColors.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${held.customer?.name ?? "Walk-in Customer"}  •  ${held.totalItemsCount} items (${held.totalQuantity.toStringAsFixed(0)} units)',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11.5,
+                                      color: EzoColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '₹${held.grandTotal.toStringAsFixed(2)}',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: EzoColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Resume Button
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: EzoColors.success,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(LucideIcons.play, size: 13),
+                              label: Text(
+                                'Resume',
+                                style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w700),
+                              ),
+                              onPressed: () {
+                                c.resumeHeldSale(held.id);
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Resumed parked bill #${held.notes}!'),
+                                    backgroundColor: EzoColors.success,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 4),
+                            // Delete from queue
+                            IconButton(
+                              icon: const Icon(LucideIcons.trash2, size: 16, color: EzoColors.error),
+                              onPressed: () {
+                                c.deleteHeldSale(held.id);
+                                setQueueState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

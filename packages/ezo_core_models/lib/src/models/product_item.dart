@@ -24,6 +24,7 @@ class ProductItem {
   final String regionalName;
   final String skuCode;
   final String barcode;
+  final String shortCode; // 1-4 digit quick Kirana code (e.g. 1 for Sugar, 2 for Rice)
   final String hsnSacCode;
   final String category;
   final ItemUnit unit;
@@ -48,6 +49,7 @@ class ProductItem {
     this.regionalName = '',
     required this.skuCode,
     this.barcode = '',
+    this.shortCode = '',
     this.hsnSacCode = '',
     this.category = 'General',
     this.unit = ItemUnit.pcs,
@@ -88,6 +90,7 @@ class ProductItem {
     String? regionalName,
     String? skuCode,
     String? barcode,
+    String? shortCode,
     String? hsnSacCode,
     String? category,
     ItemUnit? unit,
@@ -112,6 +115,7 @@ class ProductItem {
       regionalName: regionalName ?? this.regionalName,
       skuCode: skuCode ?? this.skuCode,
       barcode: barcode ?? this.barcode,
+      shortCode: shortCode ?? this.shortCode,
       hsnSacCode: hsnSacCode ?? this.hsnSacCode,
       category: category ?? this.category,
       unit: unit ?? this.unit,
@@ -139,6 +143,7 @@ class ProductItem {
       'regionalName': regionalName,
       'skuCode': skuCode,
       'barcode': barcode,
+      'shortCode': shortCode,
       'hsnSacCode': hsnSacCode,
       'category': category,
       'unit': unit.label,
@@ -166,6 +171,7 @@ class ProductItem {
       regionalName: json['regionalName'] as String? ?? '',
       skuCode: json['skuCode'] as String? ?? '',
       barcode: json['barcode'] as String? ?? '',
+      shortCode: json['shortCode'] as String? ?? '',
       hsnSacCode: json['hsnSacCode'] as String? ?? '',
       category: json['category'] as String? ?? 'General',
       unit: ItemUnit.fromString(json['unit'] as String?),

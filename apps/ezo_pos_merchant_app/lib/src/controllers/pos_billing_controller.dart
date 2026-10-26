@@ -18,6 +18,7 @@ class PosBillingController extends ChangeNotifier {
 
   // Active Cart State
   final List<InvoiceLineItem> _cartLines = [];
+  final List<HeldSale> _heldSales = [];
   PartyAccount? _selectedCustomer;
   double _billDiscount = 0.0;
   double? _customAmountReceived;
@@ -42,6 +43,7 @@ class PosBillingController extends ChangeNotifier {
   PrintFormat get printFormat => _printFormat;
   SettlementMode get settlementMode => _settlementMode;
   List<InvoiceLineItem> get cartLines => List.unmodifiable(_cartLines);
+  List<HeldSale> get heldSales => List.unmodifiable(_heldSales);
   PartyAccount? get selectedCustomer => _selectedCustomer;
   double get billDiscount => _billDiscount;
   InvoiceCustomFields get customFields => _customFields;
@@ -204,6 +206,93 @@ class PosBillingController extends ChangeNotifier {
         );
       }
     }
+    notifyListeners();
+  }
+
+  void updateCartLinePrice(int index, double newSellingPrice) {
+    if (index >= 0 && index < _cartLines.length && newSellingPrice >= 0) {
+      final line = _cartLines[index];
+      final prod = repository.getProduct(line.productId);
+      if (prod != null) {
+        final isInterState = _currentProfile.stateCode != (_selectedCustomer?.stateCode ?? _currentProfile.stateCode);
+        _cartLines[index] = EzoGstTaxEngine.buildLineItem(
+          product: prod,
+          quantity: line.quantity,
+          overrideUnitPrice: newSellingPrice,
+          lineDiscountAmount: line.lineDiscountAmount,
+          isGstInvoice: _isGstInvoice,
+          isInterStateSupply: isInterState,
+          cookingNotes: line.cookingNotes,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Finds a product matching a numeric short-code, exact barcode, or SKU
+  ProductItem? findProductByCode(String rawCode) {
+    final code = rawCode.trim();
+    if (code.isEmpty) return null;
+    final all = repository.getAllProducts();
+
+    // 1. Check numeric short-code (1-4 digit quick codes)
+    final byShortCode = all.where((p) => p.shortCode.trim() == code);
+    if (byShortCode.isNotEmpty) return byShortCode.first;
+
+    // 2. Check exact barcode
+    final byBarcode = all.where((p) => p.barcode.trim() == code);
+    if (byBarcode.isNotEmpty) return byBarcode.first;
+
+    // 3. Check SKU code (case-insensitive)
+    final bySku = all.where((p) => p.skuCode.trim().toLowerCase() == code.toLowerCase());
+    if (bySku.isNotEmpty) return bySku.first;
+
+    return null;
+  }
+
+  /// Quickly adds a product matching code (numeric short-code, barcode, or SKU)
+  bool addProductByCode(String code, {double qty = 1.0}) {
+    final product = findProductByCode(code);
+    if (product != null) {
+      addProductToCart(product, qty: qty);
+      return true;
+    }
+    return false;
+  }
+
+  /// Parks/holds the current active sale to serve the next queue
+  bool holdCurrentSale({String notes = ''}) {
+    if (_cartLines.isEmpty) return false;
+    final held = HeldSale(
+      id: 'held_${DateTime.now().millisecondsSinceEpoch}',
+      heldAt: DateTime.now(),
+      customer: _selectedCustomer,
+      cartLines: List.from(_cartLines),
+      grandTotal: grandTotal,
+      notes: notes.isNotEmpty ? notes : 'Parked Bill #${_heldSales.length + 1}',
+    );
+    _heldSales.add(held);
+    clearCart();
+    return true;
+  }
+
+  /// Resumes a parked sale by restoring its customer and cart items
+  bool resumeHeldSale(String heldSaleId) {
+    final idx = _heldSales.indexWhere((h) => h.id == heldSaleId);
+    if (idx == -1) return false;
+    final held = _heldSales.removeAt(idx);
+
+    _cartLines.clear();
+    _cartLines.addAll(held.cartLines);
+    _selectedCustomer = held.customer;
+    _recalculateCart();
+    notifyListeners();
+    return true;
+  }
+
+  /// Dismisses/deletes a held sale from the queue
+  void deleteHeldSale(String heldSaleId) {
+    _heldSales.removeWhere((h) => h.id == heldSaleId);
     notifyListeners();
   }
 

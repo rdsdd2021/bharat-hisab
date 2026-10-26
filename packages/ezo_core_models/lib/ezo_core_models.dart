@@ -12,6 +12,7 @@ export 'src/models/party_account.dart';
 export 'src/models/staff_member.dart';
 export 'src/models/merchant_license_key.dart';
 export 'src/models/sync_queue_entry.dart';
+export 'src/models/held_sale.dart';
 
 export 'src/storage/local_database.dart';
 export 'src/storage/offline_repository.dart';

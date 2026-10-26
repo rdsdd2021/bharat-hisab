@@ -333,4 +333,83 @@ void main() {
       expect(controller.tr('posBilling'), equals('பில்லிங் மற்றும் பிஓஎஸ்'));
     });
   });
+
+  group('E2E Test 7: Modern Kirana Dual-Entry Flow, Parked Queues & Short-Codes', () {
+    test('Verifies numeric short-codes, held sales queue serialization and line price updates', () {
+      const looseRice = ProductItem(
+        id: 'p_rice_loose',
+        name: 'Loose Basmati Rice 1kg',
+        skuCode: 'SKU-RICE-L',
+        shortCode: '2',
+        barcode: '8901030383793',
+        mrp: 110.0,
+        sellingPrice: 95.0,
+        currentStock: 100.0,
+      );
+
+      const looseSugar = ProductItem(
+        id: 'p_sugar_loose',
+        name: 'Loose Pure Sugar 1kg',
+        skuCode: 'SKU-SUGAR-L',
+        shortCode: '1',
+        barcode: '8901030383795',
+        mrp: 55.0,
+        sellingPrice: 50.0,
+        currentStock: 80.0,
+      );
+
+      // Verify short codes
+      expect(looseRice.shortCode, equals('2'));
+      expect(looseSugar.shortCode, equals('1'));
+
+      // Build cart lines
+      final line1 = EzoGstTaxEngine.buildLineItem(
+        product: looseRice,
+        quantity: 2.0,
+        isGstInvoice: true,
+        isInterStateSupply: false,
+      );
+
+      final line2 = EzoGstTaxEngine.buildLineItem(
+        product: looseSugar,
+        quantity: 1.0,
+        isGstInvoice: true,
+        isInterStateSupply: false,
+      );
+
+      // Park sale into queue
+      final held = HeldSale(
+        id: 'held_001',
+        heldAt: DateTime.now(),
+        customer: const PartyAccount(id: 'c1', name: 'Ramesh Sharma'),
+        cartLines: [line1, line2],
+        grandTotal: line1.totalAmount + line2.totalAmount,
+        notes: 'Parked Bill #1',
+      );
+
+      expect(held.totalItemsCount, equals(2));
+      expect(held.totalQuantity, equals(3.0));
+      expect(held.grandTotal, equals(240.0));
+
+      // Test JSON round-trip of HeldSale
+      final json = held.toJson();
+      final revived = HeldSale.fromJson(json);
+      expect(revived.id, equals('held_001'));
+      expect(revived.customer?.name, equals('Ramesh Sharma'));
+      expect(revived.cartLines.length, equals(2));
+      expect(revived.grandTotal, equals(240.0));
+
+      // Test inline price override
+      final discountedLine = EzoGstTaxEngine.buildLineItem(
+        product: looseRice,
+        quantity: 2.0,
+        overrideUnitPrice: 90.0, // Discounted from 95 to 90
+        isGstInvoice: true,
+        isInterStateSupply: false,
+      );
+      expect(discountedLine.unitSellingPrice, equals(90.0));
+      expect(discountedLine.totalAmount, equals(180.0));
+      expect(discountedLine.itemSavings, equals(40.0)); // (110 * 2) - 180 = 40 savings
+    });
+  });
 }
