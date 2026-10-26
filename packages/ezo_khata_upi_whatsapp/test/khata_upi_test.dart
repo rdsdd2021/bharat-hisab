@@ -58,7 +58,7 @@ void main() {
       expect(reminder.contains('*Ramesh Gupta*'), isTrue);
       expect(reminder.contains('₹2500.00'), isTrue);
       expect(reminder.contains('royalkirana@okaxis'), isTrue);
-      expect(reminder.contains('https://in.co.ezo/khata/store_pune/cust_ramesh'), isTrue);
+      expect(reminder.contains('https://bharathisab.in/khata/store_pune/cust_ramesh'), isTrue);
 
       final waLink = WhatsAppReminderBuilder.buildWaMeLink(
         customer: customer,

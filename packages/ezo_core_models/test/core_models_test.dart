@@ -146,7 +146,7 @@ void main() {
   group('MerchantLicenseKey Tests', () {
     test('Validates lifetime enterprise and expiration logic', () {
       final lifetime = MerchantLicenseKey(
-        key: 'EZO-LIFE-9999',
+        key: 'BH-LIFE-9999',
         merchantId: 'm1',
         storeName: 'Kirana King',
         tier: SubscriptionTier.lifetimeEnterprise,
@@ -156,7 +156,7 @@ void main() {
       expect(lifetime.daysRemaining, greaterThan(1000));
 
       final expired = MerchantLicenseKey(
-        key: 'EZO-EXP-1111',
+        key: 'BH-EXP-1111',
         merchantId: 'm2',
         storeName: 'Old Store',
         tier: SubscriptionTier.oneYearStandard,

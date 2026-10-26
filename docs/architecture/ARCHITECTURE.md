@@ -1,6 +1,6 @@
-# EZO POS Monorepo Architecture Blueprint
+# BharatHisab POS Monorepo Architecture Blueprint
 
-This document specifies the technical architecture, data flow, synchronization engine, and security boundaries of the **EZO POS & Billing Flutter Monorepo**.
+This document specifies the technical architecture, data flow, synchronization engine, and security boundaries of the **BharatHisab POS & Billing Flutter Monorepo**.
 
 ---
 
@@ -53,7 +53,7 @@ graph TD
 
 ## 2. Offline-First Storage & Outbox Synchronization Pipeline
 
-Retail counters in India face frequent network drops, power fluctuations, and spotty Wi-Fi. EZO guarantees **zero billing disruption** by implementing a local-first write pattern.
+Retail counters in India face frequent network drops, power fluctuations, and spotty Wi-Fi. BharatHisab guarantees **zero billing disruption** by implementing a local-first write pattern.
 
 ### 2.1 The Outbox Pattern (`SyncQueueEntry`)
 
@@ -114,7 +114,7 @@ Each transaction enqueued carries full metadata for idempotent replay:
 
 ## 3. Multi-Tenant Isolation & License Enforcement
 
-EZO POS is engineered for white-label multi-tenancy. A single codebase serves independent merchants, franchisors, and SaaS resellers.
+BharatHisab POS is engineered for white-label multi-tenancy. A single codebase serves independent merchants, franchisors, and SaaS resellers.
 
 ### 3.1 Tenant Profile Data Model
 
@@ -174,7 +174,7 @@ To ensure zero simulated or prototype data leaks into real production environmen
 
 ### 4.2 RBAC Permission Matrix
 
-To prevent cashier fraud and counter pilferage, EZO enforces granular permissions across 4 staff tiers:
+To prevent cashier fraud and counter pilferage, BharatHisab enforces granular permissions across 4 staff tiers:
 
 | Permission Flag | Counter Cashier (`counterCashier`) | Field Salesperson (`fieldSalesperson`) | Store Manager (`storeManager`) | Owner / Admin (`ownerAdmin`) |
 |---|:---:|:---:|:---:|:---:|

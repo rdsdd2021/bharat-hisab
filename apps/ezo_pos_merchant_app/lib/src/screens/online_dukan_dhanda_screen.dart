@@ -126,7 +126,7 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                             ),
                           ),
                           Text(
-                            'https://in.co.ezo/dukan/${widget.storeProfile.id}',
+                            'https://bharathisab.in/dukan/${widget.storeProfile.id}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(

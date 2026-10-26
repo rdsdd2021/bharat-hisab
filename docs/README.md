@@ -1,6 +1,6 @@
 # BharatHisab (भारतहिसाब) POS & Billing Suite — Documentation Portal
 
-Welcome to the official developer, operator, and administrator documentation for **BharatHisab (भारतहिसाब)** (formerly EZO POS), the offline-first billing, inventory, Khata credit ledger, Online Dukan, Dhanda AI & Reseller Suite.
+Welcome to the official developer, operator, and administrator documentation for **BharatHisab (भारतहिसाब)**, the offline-first billing, inventory, Khata credit ledger, Online Dukan, Dhanda AI & Reseller Suite.
 
 This suite is engineered as a production-grade, offline-first Flutter Melos Monorepo targeting **Android (Mobile & POS Terminals)**, **Windows Desktop**, and **Web (Browser & Admin Console)**.
 

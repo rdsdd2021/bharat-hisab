@@ -157,7 +157,7 @@ Deploy the `build/web` folder to any static hosting provider:
 firebase deploy --only hosting
 
 # Cloudflare Pages
-npx wrangler pages deploy build/web --project-name=ezo-reseller-portal
+npx wrangler pages deploy build/web --project-name=bharathisab-reseller-portal
 ```
 
 ---

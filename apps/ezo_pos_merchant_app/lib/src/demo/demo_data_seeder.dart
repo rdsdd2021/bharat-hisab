@@ -6,7 +6,7 @@ class DemoDataSeeder {
     await seedVerticalStore(
       repo: repo,
       vertical: IndustryVertical.kiranaGrocery,
-      storeName: 'EZO Mega Mart & Cafe',
+      storeName: 'Bharat Mega Mart & Cafe',
       gstin: '27AABCE1234F1Z5',
       phone: '9876543210',
       stateCode: '27',
@@ -70,8 +70,8 @@ class DemoDataSeeder {
       stateName: activeStateName,
       address: 'Shop 12-14, Commercial Hub, Pune - 411038',
       phone: activePhone,
-      email: 'pune.store@ezopos.com',
-      upiId: 'ezomart@icici',
+      email: 'pune.store@bharathisab.com',
+      upiId: 'bharatmart@icici',
       bankName: 'ICICI Bank Ltd',
       accountNumber: '002105012345',
       ifscCode: 'ICIC0000021',
@@ -82,8 +82,8 @@ class DemoDataSeeder {
       defaultPrintFormat: activeFormat,
       activeLanguageCode: activeLang,
       branding: WhiteLabelBranding(
-        brandAppName: 'EZO POS',
-        resellerCompanyName: 'EZO Technologies',
+        brandAppName: 'Bharat Hisab',
+        resellerCompanyName: 'Bharat Hisab Technologies',
         supportWhatsApp: '91$activePhone',
         primaryColorHex: vertical == IndustryVertical.restaurantCafe
             ? '#EA580C'
@@ -129,7 +129,7 @@ class DemoDataSeeder {
     // Activate 3-year Pro license if not active
     if (repo.getActiveLicense() == null) {
       final license = MerchantLicenseKey(
-        key: 'EZO-PRO-2026-9999',
+        key: 'BH-PRO-2026-9999',
         merchantId: profile.id,
         storeName: profile.storeName,
         tier: SubscriptionTier.threeYearPro,
@@ -162,7 +162,7 @@ class DemoDataSeeder {
       );
       final invoice = EzoGstTaxEngine.createInvoiceDocument(
         id: 'inv_init_01',
-        invoiceNumber: 'EZO-5001',
+        invoiceNumber: 'BH-5001',
         invoiceDate: DateTime.now(),
         storeProfile: profile,
         cashier: repo.getAllStaff().first,

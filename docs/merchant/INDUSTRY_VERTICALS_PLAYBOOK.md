@@ -1,6 +1,6 @@
 # Industry Verticals Playbook
 
-EZO POS features an interactive **First-Launch Industry Onboarding Wizard** that configures custom tax categories, default hardware profiles, receipt templates, and sample inventory catalogs tailored to 5 major Indian retail sectors.
+BharatHisab POS features an interactive **First-Launch Industry Onboarding Wizard** that configures custom tax categories, default hardware profiles, receipt templates, and sample inventory catalogs tailored to 5 major Indian retail sectors.
 
 ---
 

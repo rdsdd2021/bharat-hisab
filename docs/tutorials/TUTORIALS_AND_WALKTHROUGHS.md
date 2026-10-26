@@ -54,13 +54,13 @@ Pair a 58mm (Chota) or 80mm (Bada) thermal printer with your Android device or W
 1. Power on your Bluetooth thermal printer (e.g. *MPT-II*, *Sunmi*, or *RP-3200*).
 2. Open Android **Settings** $\rightarrow$ **Bluetooth** $\rightarrow$ Scan for devices.
 3. Select your printer and enter PIN: `0000` or `1234`.
-4. Open **EZO POS** $\rightarrow$ Tap **Settings** (Gear icon) $\rightarrow$ **Printer Settings**.
+4. Open **BharatHisab POS** $\rightarrow$ Tap **Settings** (Gear icon) $\rightarrow$ **Printer Settings**.
 5. Select **Bluetooth**, pick your paired device from the list, and tap **"Print Test Slip"**.
 
 ### Part B: Windows USB-OTG Setup
 1. Connect printer via USB cable.
 2. In Windows **Printers & Scanners**, verify the printer appears (e.g. *POS-80* or *Generic / Text Only*).
-3. In **EZO POS**, select **USB RAW Printing** and choose the COM port or USB printer endpoint.
+3. In **BharatHisab POS**, select **USB RAW Printing** and choose the COM port or USB printer endpoint.
 
 ---
 
@@ -81,7 +81,7 @@ Record an Udhaar entry for a regular customer and send an instant vernacular Wha
 3. **Send 1-Click WhatsApp Reminder**:
    - Tap **"Send WhatsApp Reminder"**.
    - Choose language: **Hindi** (or English/Marathi/Bengali/etc.).
-   - Tap **"Open WhatsApp"**. EZO opens WhatsApp with the pre-composed text:
+   - Tap **"Open WhatsApp"**. BharatHisab opens WhatsApp with the pre-composed text:
      > *"नमस्ते Ramesh Sharma जी, Apna Super Bazaar पर आपका कुल उधार ₹1,050.00 है। तुरंत भुगतान करने के लिए इस UPI लिंक पर क्लिक करें: upi://pay?pa=apnabazaar@upi&am=1050.00"*
 4. **Record Settlement**:
    - When the customer pays, tap **"Received Payment (Mujhe Mila)"**, enter ₹1,050, select Mode **UPI**, and tap Save. The balance resets to **₹0.00**.
@@ -115,7 +115,7 @@ Audit your store's Google Business Profile, reply to reviews using AI, and gener
 
 ### Steps:
 1. **Check Dhanda AI Score**:
-   - Open **Dhanda AI** tab in EZO POS.
+   - Open **Dhanda AI** tab in BharatHisab POS.
    - View your store's **Google Health Score** (e.g. `84 / 100`).
    - Notice recommendations: *"Add 3 store interior photos"* and *"Reply to 2 pending reviews"*.
 2. **Auto-Reply to Reviews**:

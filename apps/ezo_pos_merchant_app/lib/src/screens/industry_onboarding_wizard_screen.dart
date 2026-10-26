@@ -65,7 +65,7 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
         ? widget.repository.getAllProfiles().first
         : null;
 
-    _storeNameCtrl = TextEditingController(text: existing?.storeName ?? 'EZO Mega Mart & Cafe');
+    _storeNameCtrl = TextEditingController(text: existing?.storeName ?? 'Bharat Mega Mart & Cafe');
     _phoneCtrl = TextEditingController(text: existing?.phone ?? '9876543210');
     _gstinCtrl = TextEditingController(text: existing?.gstin ?? '27AABCE1234F1Z5');
     _isGstRegistered = existing?.isGstEnabled ?? true;
@@ -91,7 +91,7 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
 
       // Update default placeholder store name if user hasn't heavily modified it
       if (_storeNameCtrl.text.isEmpty ||
-          _storeNameCtrl.text == 'EZO Mega Mart & Cafe' ||
+          _storeNameCtrl.text == 'Bharat Mega Mart & Cafe' ||
           _storeNameCtrl.text.startsWith('The Spice') ||
           _storeNameCtrl.text.startsWith('Sanjivani') ||
           _storeNameCtrl.text.startsWith('FabStyle') ||
@@ -110,7 +110,7 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
             _storeNameCtrl.text = 'TechZone Mobiles & Electronics';
             break;
           case IndustryVertical.kiranaGrocery:
-            _storeNameCtrl.text = 'EZO Super Kirana & Mart';
+            _storeNameCtrl.text = 'Bharat Super Kirana & Mart';
             break;
         }
       }

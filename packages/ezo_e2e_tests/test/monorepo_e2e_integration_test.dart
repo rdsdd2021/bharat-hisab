@@ -13,25 +13,25 @@ void main() {
 
   const storeProfile = BusinessProfile(
     id: 'store_e2e',
-    storeName: 'EZO Mega Kirana',
-    legalEntityName: 'EZO Retail Technologies LLP',
+    storeName: 'Bharat Mega Kirana',
+    legalEntityName: 'Bharat Retail Technologies LLP',
     gstin: '27AABCT9999F1Z5',
     stateCode: '27',
     stateName: 'Maharashtra',
     address: 'FC Road, Shivaji Nagar, Pune - 411005',
     phone: '9822112233',
-    email: 'contact@ezokirana.com',
-    upiId: 'ezokirana@icici',
+    email: 'contact@bharathisab.com',
+    upiId: 'bharathisab@icici',
     bankName: 'ICICI Bank',
     accountNumber: '001122334455',
     ifscCode: 'ICIC0000011',
     branding: WhiteLabelBranding(
-      brandAppName: 'EZO POS',
-      resellerCompanyName: 'EZO Technologies',
+      brandAppName: 'Bharat Hisab',
+      resellerCompanyName: 'Bharat Technologies',
       supportWhatsApp: '919822112233',
       primaryColorHex: '#1E88E5',
       accentColorHex: '#FF6F00',
-      receiptFooterTagline: 'Thank you for shopping! Powered by EZO POS',
+      receiptFooterTagline: 'Thank you for shopping! Powered by Bharat Hisab',
     ),
   );
 
@@ -67,7 +67,7 @@ void main() {
 
       final invoice = EzoGstTaxEngine.createInvoiceDocument(
         id: 'inv_e2e_1',
-        invoiceNumber: 'EZO-2026-001',
+        invoiceNumber: 'BH-2026-001',
         invoiceDate: DateTime.now(),
         storeProfile: storeProfile,
         lineItems: [line],
@@ -168,7 +168,7 @@ void main() {
         storeProfile: storeProfile,
         rollWidth: ThermalRollWidth.chota58mm,
       );
-      expect(preview.contains('EZO Mega Kirana'), isTrue);
+      expect(preview.contains('Bharat Mega Kirana'), isTrue);
       expect(preview.contains('YOU SAVED Rs. 100.00'), isTrue);
       expect(preview.contains('UDHAAR DUE:'), isTrue);
     });
@@ -204,10 +204,10 @@ void main() {
 
       final svg = BarcodeStickerDesigner.renderStickerSvg(
         product: garment,
-        storeName: 'EZO Fashion',
+        storeName: 'Bharat Fashion',
       );
 
-      expect(svg.contains('EZO Fashion'), isTrue);
+      expect(svg.contains('Bharat Fashion'), isTrue);
       expect(svg.contains('MRP ₹1999'), isTrue);
       expect(svg.contains('Offer ₹1499'), isTrue);
       expect(svg.contains('SAVE 25%'), isTrue);
@@ -248,7 +248,7 @@ void main() {
 
     test('Merchant license key validity and expiration logic', () {
       final activeProKey = MerchantLicenseKey(
-        key: 'EZO-PRO-2026',
+        key: 'BH-PRO-2026',
         merchantId: 'm1',
         storeName: 'Test Store',
         tier: SubscriptionTier.threeYearPro,
@@ -259,7 +259,7 @@ void main() {
       expect(activeProKey.daysRemaining, greaterThan(900));
 
       final expiredKey = MerchantLicenseKey(
-        key: 'EZO-EXP-2026',
+        key: 'BH-EXP-2026',
         merchantId: 'm2',
         storeName: 'Old Store',
         tier: SubscriptionTier.freeTrial,
@@ -310,7 +310,7 @@ void main() {
         storeProfile: storeProfile,
       );
       expect(waReminder.contains('₹200.00'), isTrue);
-      expect(waReminder.contains('ezokirana@icici'), isTrue);
+      expect(waReminder.contains('bharathisab@icici'), isTrue);
     });
   });
 

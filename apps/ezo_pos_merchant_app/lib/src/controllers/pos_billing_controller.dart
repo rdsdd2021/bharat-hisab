@@ -333,7 +333,7 @@ class PosBillingController extends ChangeNotifier {
 
   /// Builds the complete InvoiceDocument from active cart
   InvoiceDocument buildCurrentInvoice() {
-    final billNo = 'EZO-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    final billNo = 'BH-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
     return EzoGstTaxEngine.createInvoiceDocument(
       id: 'inv_${DateTime.now().millisecondsSinceEpoch}',
       invoiceNumber: billNo,

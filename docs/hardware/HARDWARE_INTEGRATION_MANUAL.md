@@ -6,7 +6,7 @@ This manual provides low-level specifications, protocol references, and integrat
 
 ## 1. Supported Thermal Printer Formats
 
-EZO POS decouples invoice data from rendering, supporting both embedded mobile thermal printers and desktop laser printers:
+BharatHisab POS decouples invoice data from rendering, supporting both embedded mobile thermal printers and desktop laser printers:
 
 | Profile Identifier | Physical Paper Width | Printable Width | Line Pitch / Density | Characters Per Line (Font A / B) | Typical Hardware Device |
 |---|---|---|---|---|---|
@@ -50,7 +50,7 @@ final List<int> cmdFeedAndCut  = [0x1B, 0x64, 0x03, 0x1D, 0x56, 0x41, 0x00]; // 
 
 ## 3. Dynamic NPCI UPI QR Code Generation on Thermal Receipts
 
-Rather than forcing the merchant to display a static laminated QR standee with unknown amounts, EZO generates a **dynamic, transaction-specific NPCI UPI QR code** at the bottom of every bill.
+Rather than forcing the merchant to display a static laminated QR standee with unknown amounts, BharatHisab generates a **dynamic, transaction-specific NPCI UPI QR code** at the bottom of every bill.
 
 ### 3.1 NPCI Specification Compliant URI
 
@@ -121,7 +121,7 @@ TOTAL ITEMS: 9
 
 ## 5. Electronic Weighing Scale Integration (RS-232 / USB Serial)
 
-Kirana stores and supermarkets weigh loose items (Potatoes, Rice, Dry Fruits, Sweets). EZO connects to weighing scales via USB-to-UART or Serial RS-232 adapters.
+Kirana stores and supermarkets weigh loose items (Potatoes, Rice, Dry Fruits, Sweets). BharatHisab connects to weighing scales via USB-to-UART or Serial RS-232 adapters.
 
 ### 5.1 Communication Protocols
 - **Baud Rate**: Typically `9600 bps`, Data Bits: `8`, Parity: `None`, Stop Bits: `1`.
@@ -151,12 +151,12 @@ double parseScaleReading(String rawBuffer) {
 
 ## 6. Barcode Scanner Configuration
 
-EZO POS supports all standard **1D Laser / CCD** and **2D Image QR/DataMatrix** barcode scanners.
+BharatHisab POS supports all standard **1D Laser / CCD** and **2D Image QR/DataMatrix** barcode scanners.
 
 ### 6.1 Recommended Scanner Configuration
 - **Interface**: USB HID (Keyboard Wedge mode) or Bluetooth HID.
 - **Suffix Character**: Set the scanner's hardware configuration to append **Enter (`\r\n` or ASCII 13)** after each decode.
-- **Auto-Billing Mode**: In the EZO billing screen, incoming barcode events with an Enter suffix immediately increment cart quantity or add the matching SKU in `< 5ms`.
+- **Auto-Billing Mode**: In the BharatHisab billing screen, incoming barcode events with an Enter suffix immediately increment cart quantity or add the matching SKU in `< 5ms`.
 
 ---
 

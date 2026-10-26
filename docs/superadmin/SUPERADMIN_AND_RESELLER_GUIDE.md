@@ -1,6 +1,6 @@
 # Superadmin & Reseller Guidebook
 
-This guide instructs SaaS resellers, franchisors, and application owners on administering the **EZO Reseller Control Tower** (`apps/ezo_reseller_admin_portal`), generating commercial license keys, managing tenant quotas, and executing zero-recompile white-label rebranding.
+This guide instructs SaaS resellers, franchisors, and application owners on administering the **BharatHisab Reseller Control Tower** (`apps/ezo_reseller_admin_portal`), generating commercial license keys, managing tenant quotas, and executing zero-recompile white-label rebranding.
 
 ---
 
@@ -63,10 +63,10 @@ All tenant access, validity periods, and hardware quotas are cryptographically e
 
 | Tier Name | Key Prefix | Validity Duration | Target Merchant |
 |---|---|---|---|
-| `freeTrial` | `EZO-TRIAL` | 14 Days | Evaluation and new store onboarding. |
-| `oneYearStandard` | `EZO-STD` | 365 Days | Small kirana, solo cafes, and boutique retailers. |
-| `threeYearPro` | `EZO-PRO` | 1,095 Days (3 Yrs) | Growing supermarkets, multi-counter restaurants. |
-| `lifetimeEnterprise` | `EZO-ENT` | 36,500 Days (Perpetual) | Franchises, enterprise chains, and flagship stores. |
+| `freeTrial` | `BH-TRIAL` | 14 Days | Evaluation and new store onboarding. |
+| `oneYearStandard` | `BH-STD` | 365 Days | Small kirana, solo cafes, and boutique retailers. |
+| `threeYearPro` | `BH-PRO` | 1,095 Days (3 Yrs) | Growing supermarkets, multi-counter restaurants. |
+| `lifetimeEnterprise` | `BH-ENT` | 36,500 Days (Perpetual) | Franchises, enterprise chains, and flagship stores. |
 
 ### 3.2 Granular Quota & Module Controls
 When issuing a key via the **"Issue New Commercial License Key"** modal, configure:
@@ -80,8 +80,8 @@ When issuing a key via the **"Issue New Commercial License Key"** modal, configu
 ### 3.3 License Key Format & Verification
 Generated keys follow the canonical pattern:
 ```
-EZO-{TIER}-{TIMESTAMP_MILLIS}
-Example: EZO-PRO-1771958291042
+BH-{TIER}-{TIMESTAMP_MILLIS}
+Example: BH-PRO-1771958291042
 ```
 
 The POS validates keys locally by evaluating:

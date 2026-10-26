@@ -6,7 +6,7 @@ class WhatsAppReminderBuilder {
   static String buildReminderText({
     required PartyAccount customer,
     required BusinessProfile storeProfile,
-    String portalBaseUrl = 'https://in.co.ezo/khata',
+    String portalBaseUrl = 'https://bharathisab.in/khata',
   }) {
     final balance = customer.netBalance;
     final upiLink = storeProfile.upiId.isNotEmpty
@@ -56,7 +56,7 @@ class WhatsAppReminderBuilder {
   static String buildWaMeLink({
     required PartyAccount customer,
     required BusinessProfile storeProfile,
-    String portalBaseUrl = 'https://in.co.ezo/khata',
+    String portalBaseUrl = 'https://bharathisab.in/khata',
   }) {
     var rawPhone = customer.phone.replaceAll(RegExp(r'\D'), '');
     if (rawPhone.length == 10) {

@@ -73,7 +73,7 @@ bharat_hisab_workspace/
 
 ### 6. 🛡️ Superadmin & Reseller Control Tower
 - **Centralized Cloud Analytics**: Real-time fleet turnover, invoice volume, store heartbeats, and 99.8% outbox sync health.
-- **Commercial License Key Issuer**: Monospace cryptographic keys (`EZO-{TIER}-{TIMESTAMP}`) enforcing branch limits (1-25) and staff seat limits (2-50).
+- **Commercial License Key Issuer**: Monospace cryptographic keys (`BH-{TIER}-{TIMESTAMP}`) enforcing branch limits (1-25) and staff seat limits (2-50).
 - **Zero-Recompile White-Label Rebranding**: Dynamically rebrand application name, primary colors, support WhatsApp, and receipt footers at runtime.
 
 ---

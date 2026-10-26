@@ -32,7 +32,7 @@ If you start clean, you do not need to navigate deep into settings to stock your
 ## 1. Daily Cashier Routine & Shift Opening
 
 ### 1.1 Starting Your Shift
-1. **Launch App**: Open the EZO POS app on your terminal (Sunmi POS, Android tablet, or Windows Desktop).
+1. **Launch App**: Open the BharatHisab POS app on your terminal (Sunmi POS, Android tablet, or Windows Desktop).
 2. **Log In**: Select your Cashier profile from the top-right avatar menu and enter your 4-digit PIN.
 3. **Cash Drawer Float**: Enter the starting physical cash float (e.g., ₹2,000 in small change: ₹10, ₹20, ₹50, ₹100 notes).
 
@@ -81,7 +81,7 @@ The billing screen is optimized for sub-10-second checkout:
 
 ## 3. Khata (Customer & Supplier Udhaar Ledger)
 
-EZO maintains a zero-error, double-sided ledger (Bahi Khata) replacing paper notebooks.
+BharatHisab maintains a zero-error, double-sided ledger (Bahi Khata) replacing paper notebooks.
 
 ### 3.1 Recording Customer Udhaar
 1. Navigate to the **Khata** tab in the bottom navigation bar.
@@ -92,7 +92,7 @@ EZO maintains a zero-error, double-sided ledger (Bahi Khata) replacing paper not
 ### 3.2 1-Click WhatsApp Payment Reminders
 1. Open the customer's Khata ledger card.
 2. Tap the green **"Send WhatsApp Reminder"** button.
-3. EZO pre-fills a polite, regional language reminder with the customer's name, total outstanding dues, and a **clickable NPCI UPI payment link**:
+3. BharatHisab pre-fills a polite, regional language reminder with the customer's name, total outstanding dues, and a **clickable NPCI UPI payment link**:
    > *"Namaste Rahul ji, your outstanding bill at Apna Bazaar is Rs. 850.00. Please clear your dues using this UPI link: upi://pay?pa=store@upi&am=850.00. Dhanyawad!"*
 
 ---

@@ -23,7 +23,7 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
   // Active Multi-Tenant License Store
   final List<MerchantLicenseKey> _issuedLicenses = [
     MerchantLicenseKey(
-      key: 'EZO-PRO-2026-PUNE-8877',
+      key: 'BH-PRO-2026-PUNE-8877',
       merchantId: 'm_pune_01',
       storeName: 'Pune Mega Mart & Cafe',
       tier: SubscriptionTier.threeYearPro,
@@ -35,7 +35,7 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
       isOnlineDukanEnabled: true,
     ),
     MerchantLicenseKey(
-      key: 'EZO-LIFE-2026-MUMBAI-1122',
+      key: 'BH-LIFE-2026-MUMBAI-1122',
       merchantId: 'm_mum_02',
       storeName: 'Bombay Electronics Hub',
       tier: SubscriptionTier.lifetimeEnterprise,
@@ -46,7 +46,7 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
       isOnlineDukanEnabled: true,
     ),
     MerchantLicenseKey(
-      key: 'EZO-PRO-2026-BLR-5544',
+      key: 'BH-PRO-2026-BLR-5544',
       merchantId: 'm_blr_03',
       storeName: 'The Spice Bistro & Cafe',
       tier: SubscriptionTier.threeYearPro,
@@ -58,7 +58,7 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
       isOnlineDukanEnabled: true,
     ),
     MerchantLicenseKey(
-      key: 'EZO-STD-2026-DELHI-4433',
+      key: 'BH-STD-2026-DELHI-4433',
       merchantId: 'm_del_04',
       storeName: 'Sanjivani Medicos & Wellness',
       tier: SubscriptionTier.oneYearStandard,
@@ -70,7 +70,7 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
       isOnlineDukanEnabled: true,
     ),
     MerchantLicenseKey(
-      key: 'EZO-STD-2026-HYD-9988',
+      key: 'BH-STD-2026-HYD-9988',
       merchantId: 'm_hyd_05',
       storeName: 'FabStyle Boutique & Garments',
       tier: SubscriptionTier.oneYearStandard,
@@ -1408,7 +1408,7 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
               onPressed: () {
                 final storeName = storeCtrl.text.isNotEmpty ? storeCtrl.text : 'New Merchant';
                 final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(6);
-                final key = 'EZO-${tier.name.toUpperCase()}-$timestamp';
+                final key = 'BH-${tier.name.toUpperCase()}-$timestamp';
 
                 final newLic = MerchantLicenseKey(
                   key: key,

@@ -38,7 +38,7 @@ if (isInterState) {
 
 ## 2. Invoicing Tax Calculation Formulas
 
-EZO supports both **Tax-Inclusive Pricing** (Retail / Kirana / FMCG) and **Tax-Exclusive Pricing** (Wholesale / Hardware / B2B Distribution).
+BharatHisab supports both **Tax-Inclusive Pricing** (Retail / Kirana / FMCG) and **Tax-Exclusive Pricing** (Wholesale / Hardware / B2B Distribution).
 
 ### 2.1 Tax-Inclusive MRP Reverse Math
 
@@ -86,7 +86,7 @@ $$\text{Gross Line Amount} = \text{Taxable Value} + \text{Total GST}$$
 
 ## 3. Automatic Nearest-Rupee Round-Off Adjustment
 
-Indian commercial law and currency circulation discourage fractional paise in cash transactions. EZO automatically calculates the exact round-off delta:
+Indian commercial law and currency circulation discourage fractional paise in cash transactions. BharatHisab automatically calculates the exact round-off delta:
 
 $$\text{Raw Total} = \sum \text{Taxable Values} + \sum \text{CGST} + \sum \text{SGST} + \sum \text{IGST} - \text{Bill Discount}$$
 
@@ -102,7 +102,7 @@ $$\text{Round-Off Adjustment} = \text{Final Grand Total} - \text{Raw Total}$$
 
 ## 4. "You Saved" Consumer Psychology Math
 
-To drive customer loyalty on retail thermal receipts, EZO calculates the cumulative consumer savings comparing the Maximum Retail Price (MRP) against actual billed prices:
+To drive customer loyalty on retail thermal receipts, BharatHisab calculates the cumulative consumer savings comparing the Maximum Retail Price (MRP) against actual billed prices:
 
 $$\text{Savings}_{\text{line}} = (\text{Item MRP} - \text{Unit Selling Price}) \times \text{Quantity} + \text{Line Discount}$$
 

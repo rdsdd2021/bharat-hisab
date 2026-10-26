@@ -84,13 +84,13 @@ class ThermalPrinterConnectionManager {
     final devices = [
       const DiscoveredPrinterDevice(
         id: 'BT_58MM_01',
-        name: 'EZO Chota 58mm Bluetooth',
+        name: 'Bharat Chota 58mm Bluetooth',
         connectionType: PrinterConnectionType.bluetoothSpp,
         address: '00:11:22:33:44:55',
       ),
       const DiscoveredPrinterDevice(
         id: 'BT_80MM_02',
-        name: 'EZO Bada 80mm Bluetooth',
+        name: 'Bharat Bada 80mm Bluetooth',
         connectionType: PrinterConnectionType.bluetoothSpp,
         address: '66:77:88:99:AA:BB',
       ),

@@ -7,12 +7,12 @@ class WhiteLabelBranding {
   final String receiptFooterTagline;
 
   const WhiteLabelBranding({
-    this.brandAppName = 'EZO Billing',
-    this.resellerCompanyName = 'EZO Technologies Pvt Ltd',
+    this.brandAppName = 'Bharat Hisab',
+    this.resellerCompanyName = 'Bharat Hisab Technologies',
     this.supportWhatsApp = '919876543210',
-    this.primaryColorHex = '#1E88E5',
+    this.primaryColorHex = '#2563EB',
     this.accentColorHex = '#FF6F00',
-    this.receiptFooterTagline = 'Thank you for shopping! Powered by EZO POS',
+    this.receiptFooterTagline = 'Thank you for shopping! Powered by Bharat Hisab',
   });
 
   WhiteLabelBranding copyWith({
@@ -46,8 +46,8 @@ class WhiteLabelBranding {
 
   factory WhiteLabelBranding.fromJson(Map<String, dynamic> json) {
     return WhiteLabelBranding(
-      brandAppName: json['brandAppName'] as String? ?? 'EZO Billing',
-      resellerCompanyName: json['resellerCompanyName'] as String? ?? 'EZO Technologies',
+      brandAppName: json['brandAppName'] as String? ?? 'Bharat Hisab',
+      resellerCompanyName: json['resellerCompanyName'] as String? ?? 'Bharat Hisab Technologies',
       supportWhatsApp: json['supportWhatsApp'] as String? ?? '',
       primaryColorHex: json['primaryColorHex'] as String? ?? '#1E88E5',
       accentColorHex: json['accentColorHex'] as String? ?? '#FF6F00',

@@ -5,15 +5,15 @@ import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 void main() {
   const store = BusinessProfile(
     id: 's1',
-    storeName: 'EZO Mart',
-    legalEntityName: 'EZO Retail LLP',
+    storeName: 'Bharat Mart',
+    legalEntityName: 'Bharat Retail LLP',
     gstin: '27AABCT1234D1Z5',
     stateCode: '27',
     stateName: 'Maharashtra',
     address: 'FC Road, Pune',
     phone: '9876543210',
-    email: 'info@ezomart.com',
-    upiId: 'ezomart@icici',
+    email: 'info@bharatmart.com',
+    upiId: 'bharatmart@icici',
     bankName: 'ICICI Bank',
     accountNumber: '1234567890',
     ifscCode: 'ICIC0001234',
@@ -82,7 +82,7 @@ void main() {
         rollWidth: ThermalRollWidth.chota58mm,
       );
 
-      expect(preview.contains('EZO Mart'), isTrue);
+      expect(preview.contains('Bharat Mart'), isTrue);
       expect(preview.contains('Table   : T-12'), isTrue);
       expect(preview.contains('GRAND TOTAL:'), isTrue);
       expect(preview.contains('UDHAAR DUE:'), isTrue);
@@ -132,7 +132,7 @@ void main() {
       );
       expect(modern.contains('TAX INVOICE'), isTrue);
       expect(modern.contains('Cashew Nuts 250g'), isTrue);
-      expect(modern.contains('EZO Retail LLP'), isTrue);
+      expect(modern.contains('Bharat Retail LLP'), isTrue);
       expect(modern.contains('One Lakh') || modern.contains('Six Hundred Rupees Only'), isTrue);
 
       final tally = A4A5InvoicePdfBuilder.buildHtmlDocument(
