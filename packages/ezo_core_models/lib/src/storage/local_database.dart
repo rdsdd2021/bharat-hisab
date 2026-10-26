@@ -214,6 +214,12 @@ class LocalDatabase {
   StaffMember? getStaffMember(String id) => _staffMembers[id];
   List<StaffMember> getAllStaffMembers() => _staffMembers.values.toList();
 
+  Future<void> deleteStaffMember(String id) async {
+    _staffMembers.remove(id);
+    _enqueueSync('staff', id, SyncOperation.delete, {});
+    await flushToDisk();
+  }
+
   // --- License ---
   Future<void> saveLicense(MerchantLicenseKey license) async {
     _activeLicense = license;

@@ -145,6 +145,7 @@ class EzoOfflineRepository {
   Future<void> saveStaff(StaffMember staff) => db.saveStaffMember(staff);
   StaffMember? getStaff(String id) => db.getStaffMember(id);
   List<StaffMember> getAllStaff() => db.getAllStaffMembers();
+  Future<void> deleteStaff(String id) => db.deleteStaffMember(id);
 
   // --- License Key Operations ---
   Future<void> activateLicense(MerchantLicenseKey key) => db.saveLicense(key);

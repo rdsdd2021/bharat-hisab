@@ -66,8 +66,6 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
   }
 
   Widget _buildCatalogSection(PosBillingController c) {
-    final locale = LocaleController();
-
     return Column(
       children: [
         // Mode Switches & Search Bar Container
@@ -119,6 +117,45 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                   ),
                   const Spacer(),
 
+                  // Quick Customer Link Chip
+                  InkWell(
+                    onTap: () => _showCustomerSelectorModal(context, c),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: c.selectedCustomer != null
+                            ? EzoColors.primary.withValues(alpha: 0.12)
+                            : EzoColors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: c.selectedCustomer != null ? EzoColors.primary : EzoColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.user,
+                            size: 13,
+                            color: c.selectedCustomer != null ? EzoColors.primary : EzoColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            c.selectedCustomer != null ? c.selectedCustomer!.name : '+ Customer',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: c.selectedCustomer != null ? EzoColors.primary : EzoColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
                   // Quick Add Product Button
                   InkWell(
                     onTap: () => _showAddProductQuickDialog(context, c),
@@ -167,7 +204,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Search Bar
+              // Search Bar with Barcode Scanner submission & Camera Scanner Button
               Container(
                 height: 42,
                 decoration: BoxDecoration(
@@ -185,10 +222,11 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                       child: TextField(
                         controller: _searchCtrl,
                         onChanged: (val) => c.setSearchQuery(val),
+                        onSubmitted: (val) => _handleBarcodeScan(val, c),
                         style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textPrimary),
                         decoration: InputDecoration(
-                          hintText: locale.tr('searchProduct'),
-                          hintStyle: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textMuted),
+                          hintText: 'Search product or scan barcode (e.g. 8901030383794)...',
+                          hintStyle: GoogleFonts.plusJakartaSans(fontSize: 12.5, color: EzoColors.textMuted),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -205,6 +243,38 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                           c.setSearchQuery('');
                         },
                       ),
+                    // Phone Camera Barcode Scanner Button
+                    Tooltip(
+                      message: 'Scan using Camera / Phone Scanner',
+                      child: InkWell(
+                        onTap: () => _showCameraBarcodeScannerModal(context, c),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: EzoColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: EzoColors.primary.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.scanLine, size: 15, color: EzoColors.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Scan',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: EzoColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -694,44 +764,78 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
           ),
           const Divider(),
 
-          // Walk-in Customer Tile
+          // Customer / Khata Selection Tile
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: EzoColors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: EzoColors.border, width: 1),
-              ),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.user, size: 16, color: EzoColors.textSecondary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          c.selectedCustomer != null ? c.selectedCustomer!.name : 'Cash Customer (Walk-in)',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: EzoColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Tap to link registered customer / Khata',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            color: EzoColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+            child: InkWell(
+              onTap: () => _showCustomerSelectorModal(context, c),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: c.selectedCustomer != null
+                      ? EzoColors.primary.withValues(alpha: 0.08)
+                      : EzoColors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: c.selectedCustomer != null
+                        ? EzoColors.primary.withValues(alpha: 0.4)
+                        : EzoColors.border,
+                    width: 1,
                   ),
-                  const Icon(LucideIcons.chevronRight, size: 14, color: EzoColors.textMuted),
-                ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: c.selectedCustomer != null
+                            ? EzoColors.primary.withValues(alpha: 0.15)
+                            : EzoColors.border.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        LucideIcons.user,
+                        size: 16,
+                        color: c.selectedCustomer != null ? EzoColors.primary : EzoColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            c.selectedCustomer != null ? c.selectedCustomer!.name : 'Cash Customer (Walk-in)',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: EzoColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            c.selectedCustomer != null
+                                ? 'Phone: ${c.selectedCustomer!.phone.isNotEmpty ? c.selectedCustomer!.phone : "N/A"}  •  Khata Udhaar: ₹${c.selectedCustomer!.netBalance.toStringAsFixed(0)}'
+                                : 'Tap to link registered customer / Khata credit',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              color: c.selectedCustomer != null ? EzoColors.primary : EzoColors.textMuted,
+                              fontWeight: c.selectedCustomer != null ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (c.selectedCustomer != null)
+                      IconButton(
+                        icon: const Icon(LucideIcons.x, size: 15, color: EzoColors.textMuted),
+                        tooltip: 'Reset to Walk-in',
+                        onPressed: () => c.setCustomer(null),
+                      )
+                    else
+                      const Icon(LucideIcons.chevronRight, size: 14, color: EzoColors.textMuted),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1087,9 +1191,9 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
     );
   }
 
-  void _showAddProductQuickDialog(BuildContext context, PosBillingController c) {
+  void _showAddProductQuickDialog(BuildContext context, PosBillingController c, {String? initialBarcode}) {
     final nameCtrl = TextEditingController();
-    final skuCtrl = TextEditingController();
+    final skuCtrl = TextEditingController(text: initialBarcode ?? '');
     final mrpCtrl = TextEditingController(text: '100');
     final priceCtrl = TextEditingController(text: '90');
     final stockCtrl = TextEditingController(text: '50');
@@ -1423,5 +1527,851 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
       await c.repository.upsertProduct(p);
     }
     c.reloadCatalog();
+  }
+
+  void _handleBarcodeScan(String rawCode, PosBillingController c) {
+    final code = rawCode.trim();
+    if (code.isEmpty) return;
+
+    final allProds = c.repository.getAllProducts();
+    // Search exact barcode or SKU code match (case-insensitive)
+    final matched = allProds.where((p) {
+      return p.barcode.trim() == code ||
+          p.skuCode.trim().toLowerCase() == code.toLowerCase();
+    }).toList();
+
+    if (matched.isNotEmpty) {
+      final product = matched.first;
+      c.addProductToCart(product);
+      _searchCtrl.clear();
+      c.setSearchQuery('');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Added ${product.name} to cart (₹${product.sellingPrice.toStringAsFixed(0)})',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: EzoColors.success,
+          duration: const Duration(milliseconds: 1800),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Barcode / SKU "$code" not found in inventory.',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          backgroundColor: EzoColors.warning,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: '+ Register SKU',
+            textColor: Colors.white,
+            onPressed: () => _showAddProductQuickDialog(context, c, initialBarcode: code),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showCameraBarcodeScannerModal(BuildContext context, PosBillingController c) {
+    bool isTorchOn = false;
+    bool isFrontCamera = false;
+    bool continuousScan = true;
+    final manualScanCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF111827),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            top: 14,
+            left: 16,
+            right: 16,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Modal Handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Header with Controls
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.camera, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Phone Barcode Scanner',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        // Flash / Torch Toggle
+                        IconButton(
+                          icon: Icon(
+                            isTorchOn ? LucideIcons.zap : LucideIcons.zapOff,
+                            color: isTorchOn ? Colors.amber : Colors.white70,
+                            size: 20,
+                          ),
+                          tooltip: 'Flashlight',
+                          onPressed: () {
+                            setModalState(() => isTorchOn = !isTorchOn);
+                          },
+                        ),
+                        // Flip Camera Toggle
+                        IconButton(
+                          icon: Icon(
+                            LucideIcons.switchCamera,
+                            color: isFrontCamera ? EzoColors.primary : Colors.white70,
+                            size: 20,
+                          ),
+                          tooltip: 'Switch Camera',
+                          onPressed: () {
+                            setModalState(() => isFrontCamera = !isFrontCamera);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.x, color: Colors.white70, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Simulated Camera Viewport
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isTorchOn ? Colors.amber.withValues(alpha: 0.6) : Colors.white12,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Camera Grid / Viewfinder reticle
+                      Center(
+                        child: Container(
+                          width: 220,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFF10B981), width: 2),
+                            borderRadius: BorderRadius.circular(8),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.05),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Laser Red Scanning Line
+                              Container(
+                                height: 2,
+                                width: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.redAccent.withValues(alpha: 0.8),
+                                      blurRadius: 6,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 6,
+                                child: Text(
+                                  'Align Barcode Inside Box',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white70,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Lens Label Indicator
+                      Positioned(
+                        top: 10,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF10B981),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                isFrontCamera ? 'Front Camera (HD)' : 'Rear Main Camera (Auto-Focus)',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Quick Barcode Test Triggers
+                Text(
+                  'Quick-Tap to Test Barcode Scans (In-Stock Items):',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _buildTestBarcodeChip('Tata Salt', '8901030383794', c, continuousScan, ctx),
+                    _buildTestBarcodeChip('Fortune Oil', '8906007280145', c, continuousScan, ctx),
+                    _buildTestBarcodeChip('Maggi Noodles', '8901030383799', c, continuousScan, ctx),
+                    _buildTestBarcodeChip('Aashirvaad Atta', '8901030383792', c, continuousScan, ctx),
+                    _buildTestBarcodeChip('Parle-G', '8901030383798', c, continuousScan, ctx),
+                    _buildTestBarcodeChip('Dettol Soap', '8901030383800', c, continuousScan, ctx),
+                    _buildTestBarcodeChip('Unknown SKU', '8909999999999', c, continuousScan, ctx),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Manual Barcode Input Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1F2937),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: TextField(
+                          controller: manualScanCtrl,
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: 'Enter or scan barcode number...',
+                            hintStyle: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 12),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          onSubmitted: (val) {
+                            if (val.trim().isNotEmpty) {
+                              if (!continuousScan) Navigator.pop(ctx);
+                              _handleBarcodeScan(val, c);
+                              manualScanCtrl.clear();
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: EzoColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        final val = manualScanCtrl.text.trim();
+                        if (val.isNotEmpty) {
+                          if (!continuousScan) Navigator.pop(ctx);
+                          _handleBarcodeScan(val, c);
+                          manualScanCtrl.clear();
+                        }
+                      },
+                      child: Text(
+                        'Add Item',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Continuous Scanning Switch
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Continuous Scanning Mode (Rapid Checkout)',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: continuousScan,
+                      activeColor: const Color(0xFF10B981),
+                      onChanged: (val) => setModalState(() => continuousScan = val),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestBarcodeChip(
+    String label,
+    String barcode,
+    PosBillingController c,
+    bool continuousScan,
+    BuildContext modalCtx,
+  ) {
+    return ActionChip(
+      backgroundColor: const Color(0xFF1F2937),
+      side: const BorderSide(color: Colors.white12),
+      avatar: const Icon(LucideIcons.barcode, size: 14, color: Color(0xFF10B981)),
+      label: Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+      onPressed: () {
+        if (!continuousScan) Navigator.pop(modalCtx);
+        _handleBarcodeScan(barcode, c);
+      },
+    );
+  }
+
+  void _showCustomerSelectorModal(BuildContext context, PosBillingController c) {
+    final searchCustCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: EzoColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final query = searchCustCtrl.text.trim().toLowerCase();
+          final allCustomers = c.repository.getCustomerParties();
+          final filtered = allCustomers.where((cust) {
+            if (query.isEmpty) return true;
+            return cust.name.toLowerCase().contains(query) ||
+                cust.phone.contains(query) ||
+                cust.gstin.toLowerCase().contains(query);
+          }).toList();
+
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              top: 14,
+              left: 16,
+              right: 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: EzoColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Select Customer / Khata (ग्राहक)',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: EzoColors.textPrimary,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: EzoColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(LucideIcons.userPlus, size: 14),
+                      label: Text(
+                        '+ New Customer',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showAddCustomerDialog(context, c);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Search Bar
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: EzoColors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: EzoColors.border, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(LucideIcons.search, size: 16, color: EzoColors.textMuted),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: searchCustCtrl,
+                          onChanged: (_) => setSheetState(() {}),
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textPrimary),
+                          decoration: InputDecoration(
+                            hintText: 'Search customer by name or phone...',
+                            hintStyle: GoogleFonts.plusJakartaSans(fontSize: 12.5, color: EzoColors.textMuted),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Walk-in / Cash Customer Option
+                InkWell(
+                  onTap: () {
+                    c.setCustomer(null);
+                    Navigator.pop(ctx);
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: c.selectedCustomer == null
+                          ? EzoColors.primary.withValues(alpha: 0.1)
+                          : EzoColors.surfaceSecondary,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: c.selectedCustomer == null ? EzoColors.primary : EzoColors.border,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: c.selectedCustomer == null
+                                ? EzoColors.primary.withValues(alpha: 0.2)
+                                : EzoColors.border.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            LucideIcons.users,
+                            size: 16,
+                            color: c.selectedCustomer == null ? EzoColors.primary : EzoColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cash Customer (Walk-in / नकद ग्राहक)',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: EzoColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Standard over-the-counter retail checkout (No credit ledger)',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: EzoColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (c.selectedCustomer == null)
+                          const Icon(LucideIcons.checkCircle2, size: 18, color: EzoColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Registered Customers List
+                Text(
+                  'Registered Customer Accounts (${filtered.length})',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: EzoColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.userX, size: 32, color: EzoColors.textMuted),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No matching customer found',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: EzoColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextButton.icon(
+                                icon: const Icon(LucideIcons.userPlus, size: 14),
+                                label: const Text('Add This Customer Now'),
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  _showAddCustomerDialog(
+                                    context,
+                                    c,
+                                    initialName: searchCustCtrl.text.trim(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: filtered.length,
+                          separatorBuilder: (context, _) => const Divider(height: 1),
+                          itemBuilder: (context, idx) {
+                            final cust = filtered[idx];
+                            final isSelected = c.selectedCustomer?.id == cust.id;
+                            final hasUdhaar = cust.netBalance > 0;
+
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              leading: CircleAvatar(
+                                backgroundColor: isSelected
+                                    ? EzoColors.primary
+                                    : EzoColors.primary.withValues(alpha: 0.1),
+                                child: Text(
+                                  cust.name.isNotEmpty ? cust.name[0].toUpperCase() : 'C',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w700,
+                                    color: isSelected ? Colors.white : EzoColors.primary,
+                                  ),
+                                ),
+                              ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      cust.name,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: EzoColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  if (cust.gstin.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      margin: const EdgeInsets.only(left: 6),
+                                      decoration: BoxDecoration(
+                                        color: EzoColors.primary.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'GST',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: EzoColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  Text(
+                                    cust.phone.isNotEmpty ? cust.phone : 'No Phone',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11.5,
+                                      color: EzoColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '•',
+                                    style: GoogleFonts.plusJakartaSans(color: EzoColors.textMuted),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    hasUdhaar
+                                        ? 'Udhaar: ₹${cust.netBalance.toStringAsFixed(0)} Due'
+                                        : 'Khata: ₹0 Clear',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: hasUdhaar ? EzoColors.warning : EzoColors.success,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: isSelected
+                                  ? const Icon(LucideIcons.checkCircle2, color: EzoColors.primary, size: 18)
+                                  : const Icon(LucideIcons.chevronRight, size: 14, color: EzoColors.textMuted),
+                              onTap: () {
+                                c.setCustomer(cust);
+                                Navigator.pop(ctx);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddCustomerDialog(
+    BuildContext context,
+    PosBillingController c, {
+    String? initialName,
+  }) {
+    final nameCtrl = TextEditingController(text: initialName ?? '');
+    final phoneCtrl = TextEditingController();
+    final gstinCtrl = TextEditingController();
+    final stateCodeCtrl = TextEditingController(text: '27');
+    final openingBalCtrl = TextEditingController(text: '0');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EzoColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.userPlus, size: 18, color: EzoColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Add New Customer (नया ग्राहक)',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Customer Full Name *',
+                  hintText: 'e.g. Ramesh Kumar, Sunita Verma',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Mobile Phone Number *',
+                  hintText: '10-digit mobile number for WhatsApp receipts',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: gstinCtrl,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'GSTIN (Optional, for B2B billing)',
+                  hintText: 'e.g. 27ABCDE1234F1Z5',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: stateCodeCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'State Code',
+                        hintText: '27 (MH), 07 (DL), 09 (UP)',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: openingBalCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Opening Udhaar (₹)',
+                        hintText: '0',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: EzoColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter customer name')),
+                );
+                return;
+              }
+
+              final phone = phoneCtrl.text.trim();
+              final gstin = gstinCtrl.text.trim();
+              final stateCode = stateCodeCtrl.text.trim().isNotEmpty ? stateCodeCtrl.text.trim() : '27';
+              final opening = double.tryParse(openingBalCtrl.text.trim()) ?? 0.0;
+
+              final newCust = PartyAccount(
+                id: 'cust_${DateTime.now().millisecondsSinceEpoch}',
+                name: name,
+                phone: phone,
+                gstin: gstin,
+                stateCode: stateCode,
+                partyType: PartyType.customer,
+                openingBalance: opening,
+                creditLimit: 10000.0,
+              );
+
+              await c.repository.saveParty(newCust);
+              c.setCustomer(newCust);
+              if (ctx.mounted) Navigator.pop(ctx);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Customer "$name" added & linked to active bill!'),
+                    backgroundColor: EzoColors.success,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save & Link to Bill'),
+          ),
+        ],
+      ),
+    );
   }
 }
