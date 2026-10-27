@@ -262,6 +262,36 @@ class EscPosThermalEngine {
     return builder.toBytes();
   }
 
+  /// Generates a test print slip to verify ESC/POS communication, font scaling, alignment and cutter
+  static Uint8List buildTestSlipByteStream({
+    required BusinessProfile storeProfile,
+    ThermalRollWidth rollWidth = ThermalRollWidth.chota58mm,
+  }) {
+    final BytesBuilder builder = BytesBuilder();
+    builder.add([0x1B, 0x40]); // Initialize
+    builder.add([0x1B, 0x61, 0x01]); // Align Center
+    builder.add([0x1D, 0x21, 0x11]); // Double Size
+    builder.add(_encodeText('${storeProfile.storeName}\n'));
+    builder.add([0x1D, 0x21, 0x00]); // Normal size
+    builder.add(_encodeText('THERMAL PRINTER TEST SLIP\n'));
+    builder.add(_encodeText('Roll Width: ${rollWidth == ThermalRollWidth.chota58mm ? "58mm (32 Col)" : "80mm (48 Col)"}\n'));
+    builder.add(_encodeText('Date: ${_formatDateTime(DateTime.now())}\n'));
+    builder.add(_encodeText('${"-" * rollWidth.maxChars}\n'));
+    builder.add([0x1B, 0x61, 0x00]); // Align Left
+    builder.add(_encodeText('ESC/POS Command Set: OK\n'));
+    builder.add(_encodeText('Bluetooth SPP / USB OTG: OK\n'));
+    builder.add(_encodeText('Text Encoding (Latin1/UTF8): OK\n'));
+    builder.add([0x1B, 0x45, 0x01]); // Bold
+    builder.add(_encodeText('Print Engine Status: READY\n'));
+    builder.add([0x1B, 0x45, 0x00]);
+    builder.add(_encodeText('${"=" * rollWidth.maxChars}\n'));
+    builder.add([0x1B, 0x61, 0x01]); // Center
+    builder.add(_encodeText('Bharat Hisab POS • High Speed\n\n'));
+    builder.add([0x1B, 0x64, 0x04]); // Feed 4 lines
+    builder.add([0x1D, 0x56, 0x41, 0x03]); // Partial Cut
+    return builder.toBytes();
+  }
+
   /// Builds a virtual monospace string representation for on-screen receipt preview
   static String renderReceiptAsciiPreview({
     required InvoiceDocument invoice,

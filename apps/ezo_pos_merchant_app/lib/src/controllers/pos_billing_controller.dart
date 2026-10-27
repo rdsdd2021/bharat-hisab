@@ -7,8 +7,8 @@ class PosBillingController extends ChangeNotifier {
   final EzoOfflineRepository repository;
 
   // Active Store Profile & Staff
-  BusinessProfile _currentProfile;
-  StaffMember? _currentStaff;
+  final BusinessProfile _currentProfile;
+  final StaffMember? _currentStaff;
 
   // Invoice Mode Settings
   bool _isGstInvoice = true;
@@ -220,6 +220,46 @@ class PosBillingController extends ChangeNotifier {
           quantity: line.quantity,
           overrideUnitPrice: newSellingPrice,
           lineDiscountAmount: line.lineDiscountAmount,
+          isGstInvoice: _isGstInvoice,
+          isInterStateSupply: isInterState,
+          cookingNotes: line.cookingNotes,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void updateCartLineDiscount(int index, double discountAmount) {
+    if (index >= 0 && index < _cartLines.length && discountAmount >= 0) {
+      final line = _cartLines[index];
+      final prod = repository.getProduct(line.productId);
+      if (prod != null) {
+        final isInterState = _currentProfile.stateCode != (_selectedCustomer?.stateCode ?? _currentProfile.stateCode);
+        _cartLines[index] = EzoGstTaxEngine.buildLineItem(
+          product: prod,
+          quantity: line.quantity,
+          overrideUnitPrice: line.unitSellingPrice,
+          lineDiscountAmount: discountAmount,
+          isGstInvoice: _isGstInvoice,
+          isInterStateSupply: isInterState,
+          cookingNotes: line.cookingNotes,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  void updateCartLinePriceAndDiscount(int index, double newSellingPrice, double lineDiscount) {
+    if (index >= 0 && index < _cartLines.length && newSellingPrice >= 0 && lineDiscount >= 0) {
+      final line = _cartLines[index];
+      final prod = repository.getProduct(line.productId);
+      if (prod != null) {
+        final isInterState = _currentProfile.stateCode != (_selectedCustomer?.stateCode ?? _currentProfile.stateCode);
+        _cartLines[index] = EzoGstTaxEngine.buildLineItem(
+          product: prod,
+          quantity: line.quantity,
+          overrideUnitPrice: newSellingPrice,
+          lineDiscountAmount: lineDiscount,
           isGstInvoice: _isGstInvoice,
           isInterStateSupply: isInterState,
           cookingNotes: line.cookingNotes,

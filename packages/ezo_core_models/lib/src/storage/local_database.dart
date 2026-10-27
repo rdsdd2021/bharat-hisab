@@ -192,6 +192,13 @@ class LocalDatabase {
     return _parties.values.map((p) => getParty(p.id) ?? p).toList();
   }
 
+  Future<void> deleteParty(String id) async {
+    _parties.remove(id);
+    _khataEntries.removeWhere((_, e) => e.partyId == id);
+    _enqueueSync('party', id, SyncOperation.delete, {'id': id});
+    await flushToDisk();
+  }
+
   // --- Khata Ledger Entries ---
   Future<void> addKhataEntry(KhataLedgerEntry entry) async {
     _khataEntries[entry.id] = entry;

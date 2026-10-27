@@ -24,6 +24,7 @@ class EzoOfflineRepository {
   ProductItem? getProduct(String id) => db.getProduct(id);
   ProductItem? findProductByBarcode(String barcode) => db.findProductByBarcode(barcode);
   List<ProductItem> getAllProducts() => db.getAllProducts();
+  Future<void> deleteProduct(String id) => db.deleteProduct(id);
 
   List<ProductItem> getLowStockProducts() {
     return db.getAllProducts().where((p) => p.isLowStock).toList();
@@ -110,6 +111,7 @@ class EzoOfflineRepository {
       db.getAllParties().where((p) => p.partyType == PartyType.customer).toList();
   List<PartyAccount> getSupplierParties() =>
       db.getAllParties().where((p) => p.partyType == PartyType.supplier).toList();
+  Future<void> deleteParty(String id) => db.deleteParty(id);
 
   Future<void> recordPartyPayment({
     required String partyId,

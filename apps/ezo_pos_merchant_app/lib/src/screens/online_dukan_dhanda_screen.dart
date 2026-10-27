@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
@@ -23,17 +24,50 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
   late TabController _tabCtrl;
   late OnlineDukanStorefrontManager _dukanManager;
 
+  // Storefront Activation State
+  bool _isDukanActive = true;
+
   // Review Reply State
   final TextEditingController _reviewCustCtrl = TextEditingController(text: 'Sunil Rao');
+  final TextEditingController _reviewTextCtrl = TextEditingController(text: 'Great experience shopping here! Clean shop and fresh goods.');
   int _reviewStarRating = 5;
   String _generatedReply = '';
+
+  // Dhanda AI Audit State
+  int _simulatedReviews = 84;
+  final double _simulatedRating = 4.6;
+  int _simulatedPosts = 4;
+  final int _simulatedPhotos = 22;
+  late GbpAuditReport _auditReport;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
     _dukanManager = OnlineDukanStorefrontManager(repository: widget.repository);
+    _runDhandaAiAudit();
   }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    _reviewCustCtrl.dispose();
+    _reviewTextCtrl.dispose();
+    super.dispose();
+  }
+
+  void _runDhandaAiAudit() {
+    _auditReport = DhandaAiMarketingSuite.auditGoogleBusinessProfile(
+      storeProfile: widget.storeProfile,
+      totalGoogleReviews: _simulatedReviews,
+      averageStarRating: _simulatedRating,
+      monthlyPostsCount: _simulatedPosts,
+      uploadedPhotosCount: _simulatedPhotos,
+      isGstinVerified: widget.storeProfile.isGstRegistered,
+    );
+  }
+
+  String get _dukanUrl => 'https://bharathisab.in/dukan/${widget.storeProfile.id}';
 
   @override
   Widget build(BuildContext context) {
@@ -78,22 +112,23 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
   }
 
   Widget _buildOnlineDukanTab() {
-    final catalog = _dukanManager.getDukanCatalog();
+    final allProducts = widget.repository.getAllProducts();
+    final catalog = allProducts.where((p) => p.showOnOnlineDukan).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Storefront Share Banner
+          // Storefront Activation & Share Banner
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF065F46), // Deep Emerald
+              color: _isDukanActive ? const Color(0xFF065F46) : const Color(0xFF374151), // Emerald vs Slate Gray
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF065F46).withValues(alpha: 0.2),
+                  color: (_isDukanActive ? const Color(0xFF065F46) : Colors.black).withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -118,7 +153,7 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'WhatsApp Online Dukan is LIVE!',
+                            _isDukanActive ? 'WhatsApp Online Dukan is LIVE!' : 'Online Dukan is PAUSED',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 15,
@@ -126,7 +161,7 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                             ),
                           ),
                           Text(
-                            'https://bharathisab.in/dukan/${widget.storeProfile.id}',
+                            _dukanUrl,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(
@@ -137,32 +172,64 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                         ],
                       ),
                     ),
+                    // Dukan Activation Switch
+                    Switch(
+                      value: _isDukanActive,
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: const Color(0xFF10B981),
+                      inactiveThumbColor: Colors.white70,
+                      inactiveTrackColor: Colors.black38,
+                      onChanged: (val) {
+                        setState(() => _isDukanActive = val);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(val ? '🟢 WhatsApp Online Dukan is now ACTIVE and receiving orders!' : '⏸️ Online Dukan is now PAUSED.'),
+                            backgroundColor: val ? const Color(0xFF065F46) : const Color(0xFF374151),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF065F46),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(LucideIcons.share2, size: 14),
-                    label: Text(
-                      'Share Store Link on WhatsApp',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Online Dukan link copied to clipboard!'),
-                          backgroundColor: Color(0xFF065F46),
+                const SizedBox(height: 14),
+
+                // Copy Store Link & Share WhatsApp Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF065F46),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                      );
-                    },
-                  ),
+                        icon: const Icon(LucideIcons.copy, size: 14),
+                        label: Text(
+                          'Copy Store Link',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: _handleCopyStoreLink,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(LucideIcons.share2, size: 14),
+                        label: Text(
+                          'Share on WhatsApp',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: _handleShareOnWhatsApp,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -174,7 +241,7 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Live Catalog Products (${catalog.length})',
+                'Live Dukan Catalog Products (${catalog.length})',
                 style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
               ),
               Container(
@@ -192,89 +259,134 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
           ),
           const SizedBox(height: 10),
 
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: catalog.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, idx) {
-              final p = catalog[idx];
-              return Container(
-                color: EzoColors.surface,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: EzoColors.primaryLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          p.name.isNotEmpty ? p.name[0] : 'P',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w700,
-                            color: EzoColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          allProducts.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: EzoColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: EzoColors.border),
+                  ),
+                  child: Center(
+                    child: Text('No inventory products yet. Add items in Catalog first.', style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textMuted)),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: allProducts.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, idx) {
+                    final p = allProducts[idx];
+                    return Container(
+                      color: EzoColors.surface,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Row(
                         children: [
-                          Text(
-                            p.name,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              color: EzoColors.textPrimary,
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: p.showOnOnlineDukan ? EzoColors.primaryLight : EzoColors.surfaceSecondary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                p.name.isNotEmpty ? p.name[0].toUpperCase() : 'P',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w700,
+                                  color: p.showOnOnlineDukan ? EzoColors.primary : EzoColors.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: p.showOnOnlineDukan ? EzoColors.textPrimary : EzoColors.textMuted,
+                                  ),
+                                ),
+                                Text(
+                                  'MRP: ₹${p.mrp.toInt()} • Cat: ${p.category}',
+                                  style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+                                ),
+                              ],
                             ),
                           ),
                           Text(
-                            'MRP: ₹${p.mrp.toInt()} • Category: ${p.category}',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+                            'Offer ₹${p.sellingPrice.toStringAsFixed(0)}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              color: p.showOnOnlineDukan ? EzoColors.success : EzoColors.textMuted,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Toggle switch for individual product on online dukan
+                          Switch(
+                            value: p.showOnOnlineDukan,
+                            activeThumbColor: EzoColors.primary,
+                            onChanged: (val) async {
+                              final updated = p.copyWith(showOnOnlineDukan: val);
+                              await widget.repository.upsertProduct(updated);
+                              setState(() {});
+                            },
                           ),
                         ],
                       ),
-                    ),
-                    Text(
-                      'Offer ₹${p.sellingPrice.toStringAsFixed(0)}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        color: EzoColors.success,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildDhandaAiTab() {
-    final audit = DhandaAiMarketingSuite.auditGoogleBusinessProfile(
-      storeProfile: widget.storeProfile,
-      totalGoogleReviews: 84,
-      averageStarRating: 4.6,
-      monthlyPostsCount: 4,
-      uploadedPhotosCount: 22,
-      isGstinVerified: true,
+  void _handleCopyStoreLink() {
+    Clipboard.setData(ClipboardData(text: _dukanUrl));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Online Dukan link copied to clipboard: $_dukanUrl'),
+        backgroundColor: const Color(0xFF065F46),
+      ),
     );
+  }
 
+  void _handleShareOnWhatsApp() {
+    final catalog = _dukanManager.getDukanCatalog();
+    final message = '''
+🙏 Namaste!
+Now order fresh groceries & daily items online from *${widget.storeProfile.storeName}*! 🛒
+
+👉 View our 24x7 WhatsApp Catalog (${catalog.length} items):
+$_dukanUrl
+
+⚡ Fast Delivery & Store Pickup Available!
+Thank you for shopping with *${widget.storeProfile.storeName}*.
+''';
+    Clipboard.setData(ClipboardData(text: message));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('WhatsApp store announcement text copied to clipboard! Ready to send to customer broadcast list.'),
+        backgroundColor: Color(0xFF25D366),
+      ),
+    );
+  }
+
+  Widget _buildDhandaAiTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // GBP Score Card
+          // GBP Score Card with Re-audit Button
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -289,56 +401,89 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
               children: [
-                Stack(
-                  alignment: Alignment.center,
+                Row(
                   children: [
-                    SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: CircularProgressIndicator(
-                        value: audit.overallScore / 100.0,
-                        strokeWidth: 7,
-                        backgroundColor: EzoColors.surfaceSecondary,
-                        color: EzoColors.success,
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                    Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Text(
-                          '${audit.overallScore}',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: EzoColors.textPrimary),
+                        SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: CircularProgressIndicator(
+                            value: _auditReport.overallScore / 100.0,
+                            strokeWidth: 7,
+                            backgroundColor: EzoColors.surfaceSecondary,
+                            color: EzoColors.success,
+                          ),
                         ),
-                        Text(
-                          '/100',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 10, color: EzoColors.textMuted),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${_auditReport.overallScore}',
+                              style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: EzoColors.textPrimary),
+                            ),
+                            Text(
+                              '/100',
+                              style: GoogleFonts.plusJakartaSans(fontSize: 10, color: EzoColors.textMuted),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Google Business Profile Score',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _auditReport.estimatedRank.description,
+                            style: GoogleFonts.plusJakartaSans(color: EzoColors.success, fontWeight: FontWeight.w700, fontSize: 11),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Completeness: ${_auditReport.profileCompletenessScore}/25\nReviews: ${_auditReport.reviewsAndRatingScore}/25 • Posts: ${_auditReport.postFrequencyScore}/25',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 10.5, color: EzoColors.textMuted, height: 1.3),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Google Business Score',
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Top 3 Google Maps Pack (High Footfall)',
-                        style: GoogleFonts.plusJakartaSans(color: EzoColors.success, fontWeight: FontWeight.w700, fontSize: 11),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Completeness: ${audit.profileCompletenessScore}/25\nReviews: ${audit.reviewsAndRatingScore}/25 • Posts: ${audit.postFrequencyScore}/25',
-                        style: GoogleFonts.plusJakartaSans(fontSize: 10.5, color: EzoColors.textMuted, height: 1.3),
-                      ),
-                    ],
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(LucideIcons.sparkles, size: 14),
+                    label: const Text('Run Dhanda AI Audit & Re-Evaluate GBP'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: EzoColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _simulatedReviews += 2;
+                        _simulatedPosts += 1;
+                        _runDhandaAiAudit();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✨ Dhanda AI GBP Audit complete! Score: ${_auditReport.overallScore}/100'),
+                          backgroundColor: EzoColors.success,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -352,7 +497,7 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
             style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
           ),
           const SizedBox(height: 8),
-          ...audit.prioritizedActionPlan.map((action) => Padding(
+          ..._auditReport.prioritizedActionPlan.map((action) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +546,7 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                     Expanded(
                       flex: 4,
                       child: DropdownButtonFormField<int>(
-                        value: _reviewStarRating,
+                        initialValue: _reviewStarRating,
                         decoration: const InputDecoration(labelText: 'Rating'),
                         items: [5, 4, 3, 2, 1].map((s) => DropdownMenuItem(value: s, child: Text('$s ⭐'))).toList(),
                         onChanged: (s) => setState(() => _reviewStarRating = s ?? 5),
@@ -409,12 +554,18 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _reviewTextCtrl,
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12.5),
+                  decoration: const InputDecoration(labelText: 'Customer Review Text'),
+                ),
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    icon: const Icon(LucideIcons.sparkles, size: 14),
-                    label: const Text('Generate Review Reply'),
+                    icon: const Icon(LucideIcons.bot, size: 14),
+                    label: const Text('Generate AI Review Reply'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: EzoColors.primary,
                       foregroundColor: Colors.white,
@@ -423,11 +574,11 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                     onPressed: () {
                       setState(() {
                         _generatedReply = DhandaAiMarketingSuite.generateReviewReply(
-                          customerName: _reviewCustCtrl.text,
+                          customerName: _reviewCustCtrl.text.isNotEmpty ? _reviewCustCtrl.text : 'Customer',
                           starRating: _reviewStarRating,
-                          reviewText: 'Great experience shopping here!',
+                          reviewText: _reviewTextCtrl.text.isNotEmpty ? _reviewTextCtrl.text : 'Good store',
                           storeName: widget.storeProfile.storeName,
-                          storeCategory: 'Supermarket',
+                          storeCategory: 'Kirana & Supermarket',
                         );
                       });
                     },
@@ -437,15 +588,38 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: EzoColors.primaryLight,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: EzoColors.primary.withValues(alpha: 0.2)),
                     ),
-                    child: Text(
-                      _generatedReply,
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, color: EzoColors.textPrimary, height: 1.35),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          _generatedReply,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 12, color: EzoColors.textPrimary, height: 1.35),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(LucideIcons.copy, size: 13),
+                            label: const Text('Copy Reply'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              textStyle: const TextStyle(fontSize: 11),
+                            ),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: _generatedReply));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('AI review reply copied to clipboard!')),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -497,6 +671,49 @@ class _OnlineDukanDhandaScreenState extends State<OnlineDukanDhandaScreen> with 
             ),
           ),
           const SizedBox(height: 14),
+
+          // NearSearch Actions Row
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(LucideIcons.refreshCw, size: 13),
+                  label: const Text('Refresh Local SEO Tags'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onPressed: () {
+                    setState(() {});
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('NearSearch GEO Score updated: ${readiness.score}/100')),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(LucideIcons.copy, size: 13),
+                  label: const Text('Copy JSON-LD Tags'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Color(0xFF7C3AED)),
+                    foregroundColor: const Color(0xFF7C3AED),
+                  ),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: jsonLd));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('LocalBusiness JSON-LD Schema copied to clipboard!')),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
           Text(
             'Live JSON-LD LocalBusiness Schema (For ChatGPT, Claude & Gemini Bots):',
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: EzoColors.textPrimary),

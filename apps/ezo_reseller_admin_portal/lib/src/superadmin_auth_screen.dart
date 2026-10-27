@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'theme/ezo_admin_theme.dart';
 import 'theme/google_fonts.dart';
 
 class SuperadminAuthScreen extends StatefulWidget {
@@ -29,6 +28,7 @@ class _SuperadminAuthScreenState extends State<SuperadminAuthScreen> with Single
   final _emailCtrl = TextEditingController();
   final _regPinCtrl = TextEditingController();
   final _masterSecretCtrl = TextEditingController();
+  bool _obscureRegPin = true;
 
   String? _errorMessage;
 
@@ -36,6 +36,19 @@ class _SuperadminAuthScreenState extends State<SuperadminAuthScreen> with Single
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    _loginEmailCtrl.dispose();
+    _loginPinCtrl.dispose();
+    _nameCtrl.dispose();
+    _orgCtrl.dispose();
+    _emailCtrl.dispose();
+    _regPinCtrl.dispose();
+    _masterSecretCtrl.dispose();
+    super.dispose();
   }
 
   void _handleSignIn() {
@@ -67,8 +80,24 @@ class _SuperadminAuthScreenState extends State<SuperadminAuthScreen> with Single
       return;
     }
 
+    if (pin.length < 4) {
+      setState(() => _errorMessage = 'Master PIN must be at least 4 digits.');
+      return;
+    }
+
     // Authenticated
     widget.onAuthenticated();
+  }
+
+  void _fillDemoReseller() {
+    setState(() {
+      _nameCtrl.text = 'Rajesh Sharma';
+      _orgCtrl.text = 'Apex POS Networks';
+      _emailCtrl.text = 'rajesh@apexpos.in';
+      _regPinCtrl.text = '778899';
+      _masterSecretCtrl.text = 'AUTH-KEY-BH-PRO-MASTER-2026';
+      _errorMessage = null;
+    });
   }
 
   @override
@@ -215,6 +244,7 @@ class _SuperadminAuthScreenState extends State<SuperadminAuthScreen> with Single
           controller: _loginEmailCtrl,
           style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
           decoration: _inputDecoration('Master Admin Email', LucideIcons.mail),
+          onSubmitted: (_) => _handleSignIn(),
         ),
         const SizedBox(height: 14),
         TextField(
@@ -232,6 +262,7 @@ class _SuperadminAuthScreenState extends State<SuperadminAuthScreen> with Single
               onPressed: () => setState(() => _obscurePin = !_obscurePin),
             ),
           ),
+          onSubmitted: (_) => _handleSignIn(),
         ),
         const SizedBox(height: 22),
         ElevatedButton.icon(
@@ -281,18 +312,40 @@ class _SuperadminAuthScreenState extends State<SuperadminAuthScreen> with Single
         const SizedBox(height: 12),
         TextField(
           controller: _regPinCtrl,
-          obscureText: true,
+          obscureText: _obscureRegPin,
           keyboardType: TextInputType.number,
           style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
-          decoration: _inputDecoration('Create 6-Digit Master PIN', LucideIcons.lock),
+          decoration: _inputDecoration('Create 6-Digit Master PIN', LucideIcons.lock).copyWith(
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureRegPin ? LucideIcons.eyeOff : LucideIcons.eye,
+                size: 16,
+                color: const Color(0xFF94A3B8),
+              ),
+              onPressed: () => setState(() => _obscureRegPin = !_obscureRegPin),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _masterSecretCtrl,
           style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
           decoration: _inputDecoration('Reseller License Authorization Key', LucideIcons.shieldAlert),
+          onSubmitted: (_) => _handleSignUp(),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _fillDemoReseller,
+            icon: const Icon(LucideIcons.sparkles, size: 13, color: Color(0xFF818CF8)),
+            label: Text(
+              'Fill Sample Reseller Details',
+              style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF818CF8)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF10B981),

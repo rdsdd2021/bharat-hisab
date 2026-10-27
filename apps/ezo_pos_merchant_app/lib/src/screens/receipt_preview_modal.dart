@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
@@ -210,12 +211,13 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
             Row(
               children: [
                 Expanded(
+                  flex: 4,
                   child: ElevatedButton.icon(
                     onPressed: _isPrinting ? null : _handlePrintEscPos,
                     icon: _isPrinting
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(LucideIcons.printer, size: 16),
-                    label: Text(_isPrinting ? 'Printing...' : 'Print Thermal Slip'),
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(LucideIcons.printer, size: 15),
+                    label: Text(_isPrinting ? 'Printing...' : 'Print Slip'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: EzoColors.primary,
                       foregroundColor: Colors.white,
@@ -224,12 +226,28 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
+                  flex: 3,
+                  child: ElevatedButton.icon(
+                    onPressed: _handleShowUpiQr,
+                    icon: const Icon(LucideIcons.qrCode, size: 15),
+                    label: const Text('UPI QR'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D9488),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 4,
                   child: ElevatedButton.icon(
                     onPressed: _handleShareWhatsApp,
-                    icon: const Icon(LucideIcons.share2, size: 16),
-                    label: const Text('Share WhatsApp'),
+                    icon: const Icon(LucideIcons.share2, size: 15),
+                    label: const Text('WhatsApp'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: EzoColors.whatsapp,
                       foregroundColor: Colors.white,
@@ -302,6 +320,220 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
     }
   }
 
+  void _handleShowUpiQr() {
+    final upiId = widget.storeProfile.upiId.isNotEmpty
+        ? widget.storeProfile.upiId
+        : '${widget.storeProfile.phone}@upi';
+
+    final upiUri = UpiQrGenerator.buildUpiPaymentUri(
+      merchantUpiId: upiId,
+      merchantName: widget.storeProfile.storeName,
+      amount: widget.invoice.grandTotal,
+      note: 'Bill #${widget.invoice.invoiceNumber}',
+      transactionRef: widget.invoice.invoiceNumber,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EzoColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D9488).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(LucideIcons.qrCode, color: Color(0xFF0D9488), size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Instant UPI Dynamic QR',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    widget.storeProfile.storeName,
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Amount Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDFA),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF99F6E4)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Amount Locked to Bill',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF0D9488), fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '₹${widget.invoice.grandTotal.toStringAsFixed(2)}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F766E),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // High Fidelity QR Simulation Box
+            Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF0D9488), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // QR grid aesthetic pattern
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildQrCorner(),
+                            _buildQrCorner(),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildQrCorner(),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0D9488),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(LucideIcons.indianRupee, size: 16, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    'SCAN TO PAY\nANY UPI APP',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F766E),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // VPA and Intent String
+            Text(
+              'UPI VPA: $upiId',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: EzoColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Works with PhonePe, Google Pay, Paytm, BHIM & all UPI apps',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(fontSize: 10.5, color: EzoColors.textMuted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(LucideIcons.copy, size: 14),
+            label: const Text('Copy UPI Link'),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: upiUri));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('UPI Intent URI copied to clipboard!'),
+                  backgroundColor: Color(0xFF0D9488),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: EzoColors.success,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(LucideIcons.checkCircle2, size: 14),
+            label: const Text('Confirm Received'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _printStatus = 'UPI Payment of ₹${widget.invoice.grandTotal.toStringAsFixed(2)} confirmed!';
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQrCorner() {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF0F172A), width: 3),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Center(
+        child: Container(
+          width: 14,
+          height: 14,
+          color: const Color(0xFF0F172A),
+        ),
+      ),
+    );
+  }
+
   void _handleShareWhatsApp() {
     final customer = PartyAccount(
       id: 'party_temp',
@@ -315,10 +547,17 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
       storeProfile: widget.storeProfile,
     );
 
+    Clipboard.setData(ClipboardData(text: link));
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('WhatsApp receipt link: $link'),
+        content: Text('WhatsApp receipt link copied: $link'),
         backgroundColor: EzoColors.whatsapp,
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
       ),
     );
   }

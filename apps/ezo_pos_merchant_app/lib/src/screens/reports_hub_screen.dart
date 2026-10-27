@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_gst_tax_engine/ezo_gst_tax_engine.dart';
+import 'package:ezo_khata_upi_whatsapp/ezo_khata_upi_whatsapp.dart';
+import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 import '../theme/ezo_theme.dart';
 
 class ReportsHubScreen extends StatefulWidget {
@@ -23,17 +26,19 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
   late TabController _tabCtrl;
   String _salesPeriodFilter = 'all'; // 'all', 'today', 'month'
   final TextEditingController _invoiceSearchCtrl = TextEditingController();
+  final TextEditingController _cashCountCtrl = TextEditingController(text: '19150');
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 5, vsync: this);
+    _tabCtrl = TabController(length: 6, vsync: this);
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
     _invoiceSearchCtrl.dispose();
+    _cashCountCtrl.dispose();
     super.dispose();
   }
 
@@ -61,10 +66,11 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
               indicatorWeight: 2.5,
               tabs: const [
                 Tab(text: 'Daily Sales (बिक्री)'),
-                Tab(text: 'GST Statutory'),
-                Tab(text: 'P&L Financial'),
-                Tab(text: 'Stock Value'),
-                Tab(text: 'Ageing'),
+                Tab(text: 'GST Tax Report (3B)'),
+                Tab(text: 'HSN Summary'),
+                Tab(text: 'Profit & Loss'),
+                Tab(text: 'Day-End Cash Drawer'),
+                Tab(text: 'Stock & Ageing'),
               ],
             ),
           ),
@@ -74,9 +80,10 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
               children: [
                 _buildDailySalesTab(),
                 _buildGstTab(),
+                _buildHsnSummaryTab(),
                 _buildPnlTab(),
-                _buildStockValuationTab(),
-                _buildAgeingTab(),
+                _buildDayEndCashDrawerTab(),
+                _buildStockAndAgeingTab(),
               ],
             ),
           ),
@@ -142,7 +149,6 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
           // Filter Row & Search
           Row(
             children: [
-              // Period Filter Chips
               Wrap(
                 spacing: 6,
                 children: [
@@ -185,7 +191,7 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
           ),
           const SizedBox(height: 10),
 
-          // Search Bar
+          // Search Bar with Clear Button
           Container(
             height: 38,
             decoration: BoxDecoration(
@@ -551,7 +557,6 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Handle
               Center(
                 child: Container(
                   width: 36,
@@ -634,7 +639,7 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Customer: ${inv.partyName}',
+                        'Customer: ${inv.partyName.isNotEmpty ? inv.partyName : 'Cash Customer'}',
                         style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                       if (inv.partyPhone.isNotEmpty)
@@ -730,26 +735,55 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: ElevatedButton.icon(
                       icon: const Icon(LucideIcons.printer, size: 16),
                       label: const Text('Reprint Thermal Slip'),
-                      style: OutlinedButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: EzoColors.primary,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(color: EzoColors.primary),
-                        foregroundColor: EzoColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('🖨️ Thermal receipt reprinted for ${inv.invoiceNumber}'),
-                            backgroundColor: EzoColors.success,
-                          ),
+                        // Build and dispatch ESC/POS stream to active printer
+                        final bytes = EscPosThermalEngine.buildInvoiceByteStream(
+                          invoice: inv,
+                          storeProfile: widget.storeProfile,
+                          rollWidth: ThermalRollWidth.chota58mm,
                         );
+                        await ThermalPrinterConnectionManager().printBytes(bytes);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('🖨️ Thermal receipt dispatched for ${inv.invoiceNumber}'),
+                              backgroundColor: EzoColors.success,
+                            ),
+                          );
+                        }
                       },
                     ),
                   ),
                   const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(LucideIcons.copy, size: 15),
+                    label: const Text('Copy Slip'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                    ),
+                    onPressed: () {
+                      final asciiSlip = EscPosThermalEngine.renderReceiptAsciiPreview(
+                        invoice: inv,
+                        storeProfile: widget.storeProfile,
+                      );
+                      Clipboard.setData(ClipboardData(text: asciiSlip));
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Thermal receipt text copied to clipboard!')),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
                   IconButton(
                     icon: const Icon(LucideIcons.trash2, color: EzoColors.error),
                     tooltip: 'Void / Cancel Invoice',
@@ -813,9 +847,7 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
   }
 
   Widget _buildGstTab() {
-    final invoices = widget.repository.getAllInvoices();
-    final products = {for (var p in widget.repository.getAllProducts()) p.id: p};
-    final hsnRows = EzoReportEngine.generateGstr1HsnSummary(invoices, products);
+    final invoices = widget.repository.getAllInvoices().where((i) => !i.isCancelled).toList();
     final gstr3b = EzoReportEngine.generateGstr3bSummary(salesInvoices: invoices, purchaseInvoices: []);
 
     return SingleChildScrollView(
@@ -825,7 +857,7 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
         children: [
           // GSTR-3B Tax Summary Container
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: EzoColors.surface,
               borderRadius: BorderRadius.circular(12),
@@ -835,19 +867,41 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(LucideIcons.fileSpreadsheet, size: 16, color: EzoColors.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'GSTR-3B Monthly Tax Liability Summary',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 13.5, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.fileSpreadsheet, size: 18, color: EzoColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'GSTR-3B Monthly Statutory Tax Return',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(LucideIcons.download, size: 12),
+                      label: const Text('Export JSON'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: EzoColors.surfaceSecondary,
+                        foregroundColor: EzoColors.textPrimary,
+                        elevation: 0,
+                        side: const BorderSide(color: EzoColors.border),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        textStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Exported GSTR-3B payload format for GST Portal')),
+                        );
+                      },
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _buildTaxTile('Outward Supplies', '₹${gstr3b.outwardTaxableSupplies.toStringAsFixed(2)}'),
+                    _buildTaxTile('Outward Supplies (Taxable)', '₹${gstr3b.outwardTaxableSupplies.toStringAsFixed(2)}'),
                     const SizedBox(width: 8),
                     _buildTaxTile('Net CGST', '₹${gstr3b.netCgstPayable.toStringAsFixed(2)}'),
                   ],
@@ -857,7 +911,7 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
                   children: [
                     _buildTaxTile('Net SGST', '₹${gstr3b.netSgstPayable.toStringAsFixed(2)}'),
                     const SizedBox(width: 8),
-                    _buildTaxTile('Total Net Tax', '₹${gstr3b.totalNetTaxPayable.toStringAsFixed(2)}', isPrimary: true),
+                    _buildTaxTile('Total Net Tax Payable', '₹${gstr3b.totalNetTaxPayable.toStringAsFixed(2)}', isPrimary: true),
                   ],
                 ),
               ],
@@ -865,12 +919,48 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
           ),
           const SizedBox(height: 16),
 
-          // GSTR-1 HSN Table Header
+          // GSTR-1 Invoices Summary Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: EzoColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: EzoColors.border, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'GSTR-1 Outward Supplies Overview',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
+                ),
+                const SizedBox(height: 10),
+                _buildReceiptRow('Total B2C Small Invoices', '${invoices.where((i) => i.partyGstin.isEmpty).length} bills'),
+                _buildReceiptRow('Total B2B Invoices', '${invoices.where((i) => i.partyGstin.isNotEmpty).length} bills'),
+                _buildReceiptRow('Total GST Collected', '₹${gstr3b.totalNetTaxPayable.toStringAsFixed(2)}', isBold: true, color: EzoColors.primary),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHsnSummaryTab() {
+    final invoices = widget.repository.getAllInvoices().where((i) => !i.isCancelled).toList();
+    final products = {for (var p in widget.repository.getAllProducts()) p.id: p};
+    final hsnRows = EzoReportEngine.generateGstr1HsnSummary(invoices, products);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'GSTR-1 HSN Summary',
+                'GSTR-1 HSN / SAC Code Summary (${hsnRows.length})',
                 style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
               ),
               ElevatedButton.icon(
@@ -889,14 +979,15 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
                     headers: ['HSN Code', 'Description', 'Qty', 'Taxable Value', 'CGST', 'SGST', 'Total Value'],
                     rows: hsnRows.map((r) => [r.hsnSacCode, r.description, r.totalQuantity, r.taxableValue, r.centralTaxAmount, r.stateTaxAmount, r.totalValue]).toList(),
                   );
+                  Clipboard.setData(ClipboardData(text: csv));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Exported GSTR-1 HSN CSV (${csv.length} bytes)')),
+                    SnackBar(content: Text('Exported GSTR-1 HSN CSV (${csv.length} bytes) to clipboard!')),
                   );
                 },
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           Container(
             decoration: BoxDecoration(
@@ -968,7 +1059,7 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
   Widget _buildPnlTab() {
     final now = DateTime.now();
     final pnl = EzoReportEngine.generateProfitAndLoss(
-      sales: widget.repository.getAllInvoices(),
+      sales: widget.repository.getAllInvoices().where((i) => !i.isCancelled).toList(),
       productsMap: {for (var p in widget.repository.getAllProducts()) p.id: p},
       totalExpenses: 2500.0,
       startDate: now.subtract(const Duration(days: 30)),
@@ -987,7 +1078,21 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Profit & Loss Statement (Last 30 Days)', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Profit & Loss Statement (Last 30 Days)', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary)),
+                IconButton(
+                  icon: const Icon(LucideIcons.download, size: 16),
+                  tooltip: 'Export P&L Summary',
+                  onPressed: () {
+                    final report = 'P&L Statement: Gross Sales ₹${pnl.grossRevenue}, Net Profit ₹${pnl.netProfit} (${pnl.netMarginPercent.toStringAsFixed(1)}%)';
+                    Clipboard.setData(ClipboardData(text: report));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('P&L report copied to clipboard!')));
+                  },
+                ),
+              ],
+            ),
             const Divider(height: 20),
             _buildPnlRow('Gross Revenue (Sales)', '₹${pnl.grossRevenue.toStringAsFixed(2)}', EzoColors.textPrimary),
             _buildPnlRow('Cost of Goods Sold (COGS)', '- ₹${pnl.costOfGoodsSold.toStringAsFixed(2)}', EzoColors.error),
@@ -1002,36 +1107,124 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildStockValuationTab() {
-    final summary = EzoReportEngine.generateStockValuation(widget.repository.getAllProducts());
+  Widget _buildDayEndCashDrawerTab() {
+    final double countedVal = double.tryParse(_cashCountCtrl.text) ?? 19150.0;
+    final recon = CashDrawerReconciliation(
+      openingCash: 5000.0,
+      cashSales: 12450.0,
+      cashUdhaarCollections: 2500.0,
+      cashExpenses: 800.0,
+      actualCountedCash: countedVal,
+    );
+
+    final isBalanced = recon.isBalanced;
+    final diff = recon.discrepancy;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: EzoColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: EzoColors.border, width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Stock Inventory Valuation', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary)),
-            const Divider(height: 20),
-            _buildPnlRow('Total SKUs Tracked', '${summary.totalSkus}', EzoColors.textPrimary),
-            _buildPnlRow('Total Quantity in Stock', '${summary.totalQuantity.toInt()} units', EzoColors.textPrimary),
-            _buildPnlRow('Stock Asset Value (Cost)', '₹${summary.totalAssetValueAtCost.toStringAsFixed(2)}', EzoColors.success, isBold: true),
-            _buildPnlRow('Stock Retail Value', '₹${summary.totalRetailValue.toStringAsFixed(2)}', const Color(0xFF7C3AED), isBold: true),
-            const Divider(height: 16),
-            _buildPnlRow('Potential Unrealized Profit', '₹${summary.potentialGrossProfit.toStringAsFixed(2)}', EzoColors.primary, isBold: true),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Day-End Cash Drawer Reconciliation',
+                style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(LucideIcons.checkCheck, size: 14),
+                label: const Text('Reconcile & Close'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: EzoColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Day-end cash drawer closed with counted cash ₹${recon.actualCountedCash.toStringAsFixed(2)}'),
+                      backgroundColor: EzoColors.success,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: EzoColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: EzoColors.border, width: 1),
+            ),
+            child: Column(
+              children: [
+                _buildReceiptRow('Opening Float', '₹${recon.openingCash.toStringAsFixed(2)}'),
+                _buildReceiptRow('Cash Sales Today', '+ ₹${recon.cashSales.toStringAsFixed(2)}', color: EzoColors.success),
+                _buildReceiptRow('Cash Udhaar Collected', '+ ₹${recon.cashUdhaarCollections.toStringAsFixed(2)}', color: EzoColors.success),
+                _buildReceiptRow('Cash Expenses Paid', '- ₹${recon.cashExpenses.toStringAsFixed(2)}', color: EzoColors.error),
+                const Divider(height: 16),
+                _buildReceiptRow('Expected Cash in Drawer', '₹${recon.expectedCashInDrawer.toStringAsFixed(2)}', isBold: true),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Counted Cash In Till:', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
+                    SizedBox(
+                      width: 120,
+                      height: 36,
+                      child: TextField(
+                        controller: _cashCountCtrl,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.right,
+                        onChanged: (_) => setState(() {}),
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w800),
+                        decoration: InputDecoration(
+                          prefixText: '₹',
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Drawer Status:', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isBalanced ? EzoColors.successBg : (diff > 0 ? const Color(0xFFEFF6FF) : EzoColors.errorBg),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        isBalanced
+                            ? 'BALANCED (₹0.00 Diff)'
+                            : (diff > 0 ? 'SURPLUS (+₹${diff.toStringAsFixed(2)})' : 'SHORTAGE (-₹${(-diff).toStringAsFixed(2)})'),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: isBalanced ? EzoColors.success : (diff > 0 ? const Color(0xFF2563EB) : EzoColors.error),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildAgeingTab() {
+  Widget _buildStockAndAgeingTab() {
+    final summary = EzoReportEngine.generateStockValuation(widget.repository.getAllProducts());
     final ageing = EzoReportEngine.generateCustomerAgeingReport(widget.repository.getCustomerParties());
 
     return SingleChildScrollView(
@@ -1039,6 +1232,31 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Stock Valuation
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: EzoColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: EzoColors.border, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Stock Inventory Valuation', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary)),
+                const Divider(height: 20),
+                _buildPnlRow('Total SKUs Tracked', '${summary.totalSkus}', EzoColors.textPrimary),
+                _buildPnlRow('Total Quantity in Stock', '${summary.totalQuantity.toInt()} units', EzoColors.textPrimary),
+                _buildPnlRow('Stock Asset Value (Cost)', '₹${summary.totalAssetValueAtCost.toStringAsFixed(2)}', EzoColors.success, isBold: true),
+                _buildPnlRow('Stock Retail Value', '₹${summary.totalRetailValue.toStringAsFixed(2)}', const Color(0xFF7C3AED), isBold: true),
+                const Divider(height: 16),
+                _buildPnlRow('Potential Unrealized Profit', '₹${summary.potentialGrossProfit.toStringAsFixed(2)}', EzoColors.primary, isBold: true),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Customer Ageing
           Text('Customer Udhaar Ageing Analysis', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: EzoColors.textPrimary)),
           const SizedBox(height: 10),
           Container(

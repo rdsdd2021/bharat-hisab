@@ -4,7 +4,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/google_fonts.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import '../demo/demo_data_seeder.dart';
-import '../theme/ezo_theme.dart';
 
 class MerchantAuthScreen extends StatefulWidget {
   final EzoOfflineRepository repository;
@@ -33,7 +32,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
   IndustryVertical _selectedVertical = IndustryVertical.kiranaGrocery;
   String _selectedState = '27 - Maharashtra';
   bool _startEmptyStore = true; // Default to clean empty real store!
-  bool _isGstEnabled = true;
+  final bool _isGstEnabled = true;
 
   // Sign In Controllers
   final _loginPhoneCtrl = TextEditingController();
@@ -215,9 +214,6 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 700;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: Center(
@@ -395,6 +391,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
                 keyboardType: TextInputType.number,
                 maxLength: 4,
                 obscureText: true,
+                onSubmitted: (_) => _handleSignUp(),
               ),
             ),
             const SizedBox(width: 10),
@@ -565,6 +562,22 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton(
+            onPressed: () {
+              _tabCtrl.animateTo(1);
+            },
+            child: Text(
+              'Already have a business account? Sign In with PIN',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF4338CA),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -590,6 +603,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
           keyboardType: TextInputType.number,
           maxLength: 4,
           obscureText: true,
+          onSubmitted: (_) => _handleSignIn(),
         ),
         const SizedBox(height: 20),
         ElevatedButton(
@@ -637,6 +651,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
     TextInputType keyboardType = TextInputType.text,
     int? maxLength,
     bool obscureText = false,
+    ValueChanged<String>? onSubmitted,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,6 +677,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
             keyboardType: keyboardType,
             obscureText: obscureText,
             maxLength: maxLength,
+            onSubmitted: onSubmitted,
             inputFormatters: keyboardType == TextInputType.number || keyboardType == TextInputType.phone
                 ? [FilteringTextInputFormatter.digitsOnly]
                 : null,

@@ -532,7 +532,7 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
 
               // State Dropdown
               DropdownButtonFormField<String>(
-                value: _selectedStateCode,
+                initialValue: _selectedStateCode,
                 decoration: InputDecoration(
                   labelText: 'Operating State (For CGST/SGST vs IGST Split)',
                   prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
@@ -578,15 +578,20 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
               const SizedBox(height: 10),
 
               // Mode 1: Regular GST Tax Invoice
-              RadioListTile<bool>(
-                value: true,
-                groupValue: _isGstRegistered,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                activeColor: EzoColors.primary,
-                title: Text('GST Registered (Regular Tax Invoices)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
-                subtitle: Text('Full GSTR-1, GSTR-3B compliance, CGST+SGST/IGST tax extraction', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
-                onChanged: (val) => setState(() => _isGstRegistered = val ?? true),
+              Material(
+                type: MaterialType.transparency,
+                child: RadioListTile<bool>(
+                  value: true,
+                  // ignore: deprecated_member_use
+                  groupValue: _isGstRegistered,
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: EzoColors.primary,
+                  title: Text('GST Registered (Regular Tax Invoices)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
+                  subtitle: Text('Full GSTR-1, GSTR-3B compliance, CGST+SGST/IGST tax extraction', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
+                  // ignore: deprecated_member_use
+                  onChanged: (val) => setState(() => _isGstRegistered = val ?? true),
+                ),
               ),
 
               if (_isGstRegistered) ...[
@@ -607,15 +612,20 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
               const Divider(height: 20),
 
               // Mode 2: Composition / Non-GST
-              RadioListTile<bool>(
-                value: false,
-                groupValue: _isGstRegistered,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                activeColor: EzoColors.primary,
-                title: Text('Non-GST / Composition Store (Bill of Supply)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
-                subtitle: Text('Issues Bills of Supply without charging statutory taxes', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
-                onChanged: (val) => setState(() => _isGstRegistered = val ?? false),
+              Material(
+                type: MaterialType.transparency,
+                child: RadioListTile<bool>(
+                  value: false,
+                  // ignore: deprecated_member_use
+                  groupValue: _isGstRegistered,
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: EzoColors.primary,
+                  title: Text('Non-GST / Composition Store (Bill of Supply)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
+                  subtitle: Text('Issues Bills of Supply without charging statutory taxes', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
+                  // ignore: deprecated_member_use
+                  onChanged: (val) => setState(() => _isGstRegistered = val ?? false),
+                ),
               ),
             ],
           ),
@@ -639,7 +649,7 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<RegionalLanguage>(
-                value: _selectedLanguage,
+                initialValue: _selectedLanguage,
                 decoration: InputDecoration(
                   labelText: 'Default Language',
                   prefixIcon: const Icon(LucideIcons.languages, size: 16),
@@ -772,10 +782,13 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // ignore: deprecated_member_use
                     Radio<PrintFormat>(
                       value: fmt,
+                      // ignore: deprecated_member_use
                       groupValue: _selectedPrintFormat,
                       activeColor: EzoColors.primary,
+                      // ignore: deprecated_member_use
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedPrintFormat = val);
                       },
@@ -799,22 +812,28 @@ class _IndustryOnboardingWizardScreenState extends State<IndustryOnboardingWizar
           ),
           child: Column(
             children: [
-              SwitchListTile(
-                value: _enableAutoKot,
-                activeColor: EzoColors.primary,
-                contentPadding: EdgeInsets.zero,
-                title: Text('Kitchen Order Ticket (KOT) Dispatch', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
-                subtitle: Text('Instantly print table-wise KOT slips to the kitchen on bill placement', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
-                onChanged: (val) => setState(() => _enableAutoKot = val),
+              Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile(
+                  value: _enableAutoKot,
+                  activeThumbColor: EzoColors.primary,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Kitchen Order Ticket (KOT) Dispatch', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
+                  subtitle: Text('Instantly print table-wise KOT slips to the kitchen on bill placement', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
+                  onChanged: (val) => setState(() => _enableAutoKot = val),
+                ),
               ),
               const Divider(height: 12),
-              SwitchListTile(
-                value: _printUpiQrOnBill,
-                activeColor: EzoColors.primary,
-                contentPadding: EdgeInsets.zero,
-                title: Text('Dynamic NPCI UPI QR on Receipt', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
-                subtitle: Text('Print UPI QR code embedded with exact bill amount for instant customer scanning', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
-                onChanged: (val) => setState(() => _printUpiQrOnBill = val),
+              Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile(
+                  value: _printUpiQrOnBill,
+                  activeThumbColor: EzoColors.primary,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Dynamic NPCI UPI QR on Receipt', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
+                  subtitle: Text('Print UPI QR code embedded with exact bill amount for instant customer scanning', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted)),
+                  onChanged: (val) => setState(() => _printUpiQrOnBill = val),
+                ),
               ),
             ],
           ),

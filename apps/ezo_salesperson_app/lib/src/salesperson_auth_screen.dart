@@ -16,19 +16,31 @@ class SalespersonAuthScreen extends StatefulWidget {
 }
 
 class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
-  final _storeNameCtrl = TextEditingController(text: 'My Business Store');
-  final _agentNameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _pinCtrl = TextEditingController();
+  final _storeNameCtrl = TextEditingController(text: 'Pune Mega Mart & Cafe');
+  final _agentNameCtrl = TextEditingController(text: 'Rohan Sharma');
+  final _phoneCtrl = TextEditingController(text: '9876543210');
+  final _pinCtrl = TextEditingController(text: '1234');
+  bool _obscurePin = true;
   String? _error;
+  String? _selectedProfileId;
 
   @override
   void initState() {
     super.initState();
     final profiles = widget.repository.getAllProfiles();
     if (profiles.isNotEmpty) {
+      _selectedProfileId = profiles.first.id;
       _storeNameCtrl.text = profiles.first.storeName;
     }
+  }
+
+  @override
+  void dispose() {
+    _storeNameCtrl.dispose();
+    _agentNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _pinCtrl.dispose();
+    super.dispose();
   }
 
   void _handleLogin() async {
@@ -42,30 +54,32 @@ class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
     }
 
     if (pin.length < 4) {
-      setState(() => _error = 'PIN must be 4 digits.');
+      setState(() => _error = 'PIN must be at least 4 digits.');
       return;
     }
 
     // Check if store profile exists or create one
     final profiles = widget.repository.getAllProfiles();
     BusinessProfile profile;
-    if (profiles.isNotEmpty) {
+    if (_selectedProfileId != null && profiles.any((p) => p.id == _selectedProfileId)) {
+      profile = profiles.firstWhere((p) => p.id == _selectedProfileId);
+    } else if (profiles.isNotEmpty) {
       profile = profiles.first;
     } else {
       profile = BusinessProfile(
         id: 'store_${DateTime.now().millisecondsSinceEpoch}',
-        storeName: _storeNameCtrl.text.trim().isNotEmpty ? _storeNameCtrl.text.trim() : 'My Retail Store',
-        legalEntityName: _storeNameCtrl.text.trim().isNotEmpty ? _storeNameCtrl.text.trim() : 'My Retail Store',
-        gstin: '',
+        storeName: _storeNameCtrl.text.trim().isNotEmpty ? _storeNameCtrl.text.trim() : 'Pune Mega Mart & Cafe',
+        legalEntityName: _storeNameCtrl.text.trim().isNotEmpty ? _storeNameCtrl.text.trim() : 'Pune Mega Mart LLP',
+        gstin: '27AABCE1234F1Z5',
         stateCode: '27',
         stateName: 'Maharashtra',
-        address: 'Market Area',
+        address: 'MG Road, Camp, Pune - 411001',
         phone: phone,
-        email: 'store@bharathisab.com',
-        upiId: 'store@upi',
-        bankName: 'State Bank of India',
-        accountNumber: '998877665544',
-        ifscCode: 'SBIN0001234',
+        email: 'billing@punemart.com',
+        upiId: 'punemart@icici',
+        bankName: 'HDFC Bank',
+        accountNumber: '50200012345678',
+        ifscCode: 'HDFC0001234',
       );
       await widget.repository.saveProfile(profile);
     }
@@ -89,6 +103,15 @@ class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
     widget.onAuthenticated(profile, staff);
   }
 
+  void _fillDemoCredentials() {
+    setState(() {
+      _agentNameCtrl.text = 'Rohan Sharma';
+      _phoneCtrl.text = '9876543210';
+      _pinCtrl.text = '1234';
+      _error = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final existingProfiles = widget.repository.getAllProfiles();
@@ -99,9 +122,9 @@ class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Card(
-              elevation: 4,
+              elevation: 6,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -109,7 +132,15 @@ class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.delivery_dining, size: 48, color: Colors.indigo),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.delivery_dining, size: 36, color: Colors.indigo.shade700),
+                    ),
                     const SizedBox(height: 12),
                     const Text(
                       'Sales Representative Sign In',
@@ -132,15 +163,43 @@ class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.red.shade200),
                         ),
-                        child: Text(
-                          _error!,
-                          style: TextStyle(color: Colors.red.shade800, fontSize: 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, size: 16, color: Colors.red.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: TextStyle(color: Colors.red.shade800, fontSize: 12),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 14),
                     ],
 
-                    if (existingProfiles.isEmpty) ...[
+                    if (existingProfiles.length > 1) ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedProfileId,
+                        decoration: const InputDecoration(
+                          labelText: 'Assigned Store Branch',
+                          prefixIcon: Icon(Icons.store),
+                          border: OutlineInputBorder(),
+                        ),
+                        items: existingProfiles.map((p) {
+                          return DropdownMenuItem(value: p.id, child: Text(p.storeName));
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedProfileId = val;
+                            final selected = existingProfiles.firstWhere((p) => p.id == val);
+                            _storeNameCtrl.text = selected.storeName;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ] else if (existingProfiles.isEmpty) ...[
                       TextField(
                         controller: _storeNameCtrl,
                         decoration: const InputDecoration(
@@ -173,24 +232,38 @@ class _SalespersonAuthScreenState extends State<SalespersonAuthScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _pinCtrl,
-                      obscureText: true,
+                      obscureText: _obscurePin,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '4-Digit Agent PIN',
-                        prefixIcon: Icon(Icons.lock),
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePin ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                        ),
+                      ),
+                      onSubmitted: (_) => _handleLogin(),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _fillDemoCredentials,
+                        icon: const Icon(Icons.auto_fix_high, size: 14),
+                        label: const Text('Fill Demo Credentials', style: TextStyle(fontSize: 12)),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
+                        backgroundColor: Colors.indigo.shade800,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       icon: const Icon(Icons.login),
-                      label: const Text('Start Field Session', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: const Text('Start Field Session', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       onPressed: _handleLogin,
                     ),
                   ],

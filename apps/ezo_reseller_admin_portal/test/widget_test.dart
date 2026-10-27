@@ -1,30 +1,54 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:ezo_reseller_admin_portal/main.dart';
+import 'package:ezo_reseller_admin_portal/src/superadmin_auth_screen.dart';
+import 'package:ezo_reseller_admin_portal/src/reseller_dashboard_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('SuperadminAuthScreen renders and allows login submission', (WidgetTester tester) async {
+    bool authenticated = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SuperadminAuthScreen(
+          onAuthenticated: () {
+            authenticated = true;
+          },
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('BharatHisab Control Tower'), findsOneWidget);
+    expect(find.text('Sign In to Control Tower'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Tap sign in
+    await tester.tap(find.text('Sign In to Control Tower'));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(authenticated, isTrue);
+  });
+
+  testWidgets('ResellerDashboardScreen renders tabs, KPIs and issue key dialog', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ResellerDashboardScreen(),
+      ),
+    );
+
+    expect(find.text('Issue Commercial Key'), findsWidgets);
+    expect(find.text('TOTAL FLEET SALES (TODAY)'), findsOneWidget);
+
+    // Open Issue Commercial Key modal
+    await tester.tap(find.text('Issue Commercial Key').first);
+    await tester.pumpAndSettle();
+
+    // Verify modal elements
+    expect(find.text('Subscription Tier'), findsOneWidget);
+    expect(find.text('Generate Key'), findsOneWidget);
   });
 }
