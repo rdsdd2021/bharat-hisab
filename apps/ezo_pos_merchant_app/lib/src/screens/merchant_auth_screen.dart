@@ -109,67 +109,88 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
     final stateCode = stateParts[0];
     final stateName = stateParts.length > 1 ? stateParts[1] : 'Maharashtra';
 
-    final profileId = 'store_${DateTime.now().millisecondsSinceEpoch}';
-    final staffId = 'staff_${DateTime.now().millisecondsSinceEpoch}';
-
-    final profile = BusinessProfile(
-      id: profileId,
+    // 1. Attempt Cloud Registration First
+    final cloudResult = await widget.repository.registerCloud(
+      phone: phone,
+      pin: pin,
       storeName: storeName,
-      legalEntityName: '$storeName Retail Ltd',
-      gstin: _isGstEnabled ? '${stateCode}ABCDE1234F1Z5' : '',
+      ownerName: ownerName,
+      vertical: _selectedVertical.name,
       stateCode: stateCode,
       stateName: stateName,
-      address: 'Main Commercial Market, $stateName',
-      phone: phone,
-      email: 'owner@${storeName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}.com',
-      upiId: '$phone@upi',
-      bankName: 'State Bank of India',
-      accountNumber: '309812739182',
-      ifscCode: 'SBIN0001234',
-      defaultPrintFormat: _selectedVertical == IndustryVertical.restaurantCafe
-          ? PrintFormat.bada80mm
-          : PrintFormat.chota58mm,
-      branding: WhiteLabelBranding(
-        brandAppName: 'BharatHisab',
-        resellerCompanyName: 'Bharat Commercial Tech Ltd',
-        supportWhatsApp: phone,
-        primaryColorHex: '#4338CA',
-        accentColorHex: '#4F46E5',
-        receiptFooterTagline: 'Thank you for shopping with us! Visit again.',
-      ),
+      isGstEnabled: _isGstEnabled,
     );
 
-    final staff = StaffMember(
-      id: staffId,
-      storeProfileId: profileId,
-      fullName: ownerName,
-      phone: phone,
-      pinCode: pin,
-      role: StaffRole.ownerAdmin,
-      canEditPrices: true,
-      canDeleteBills: true,
-      canViewProfitReports: true,
-      canCollectUdhaar: true,
-      createdAt: DateTime.now(),
-    );
+    BusinessProfile profile;
+    StaffMember staff;
 
-    final license = MerchantLicenseKey(
-      key: 'BHARAT-STD-${DateTime.now().millisecondsSinceEpoch}',
-      merchantId: profileId,
-      storeName: storeName,
-      tier: SubscriptionTier.oneYearStandard,
-      issuedAt: DateTime.now(),
-      expiresAt: DateTime.now().add(const Duration(days: 365)),
-      maxAllowedStores: 3,
-      maxStaffSeats: 5,
-      isDhandaAiEnabled: true,
-      isOnlineDukanEnabled: true,
-    );
+    if (cloudResult.success && cloudResult.profile != null && cloudResult.staff != null) {
+      profile = cloudResult.profile!;
+      staff = cloudResult.staff!;
+    } else {
+      // 2. Offline Fallback: Local Creation
+      final profileId = 'store_${DateTime.now().millisecondsSinceEpoch}';
+      final staffId = 'staff_${DateTime.now().millisecondsSinceEpoch}';
 
-    // Save profile, owner staff, and license
-    await widget.repository.saveProfile(profile);
-    await widget.repository.saveStaff(staff);
-    await widget.repository.activateLicense(license);
+      profile = BusinessProfile(
+        id: profileId,
+        storeName: storeName,
+        legalEntityName: '$storeName Retail Ltd',
+        gstin: _isGstEnabled ? '${stateCode}ABCDE1234F1Z5' : '',
+        stateCode: stateCode,
+        stateName: stateName,
+        address: 'Main Commercial Market, $stateName',
+        phone: phone,
+        email: 'owner@${storeName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}.com',
+        upiId: '$phone@upi',
+        bankName: 'State Bank of India',
+        accountNumber: '309812739182',
+        ifscCode: 'SBIN0001234',
+        defaultPrintFormat: _selectedVertical == IndustryVertical.restaurantCafe
+            ? PrintFormat.bada80mm
+            : PrintFormat.chota58mm,
+        branding: WhiteLabelBranding(
+          brandAppName: 'BharatHisab',
+          resellerCompanyName: 'Bharat Commercial Tech Ltd',
+          supportWhatsApp: phone,
+          primaryColorHex: '#4338CA',
+          accentColorHex: '#4F46E5',
+          receiptFooterTagline: 'Thank you for shopping with us! Visit again.',
+        ),
+      );
+
+      staff = StaffMember(
+        id: staffId,
+        storeProfileId: profileId,
+        fullName: ownerName,
+        phone: phone,
+        pinCode: pin,
+        role: StaffRole.ownerAdmin,
+        canEditPrices: true,
+        canDeleteBills: true,
+        canViewProfitReports: true,
+        canCollectUdhaar: true,
+        createdAt: DateTime.now(),
+      );
+
+      final license = MerchantLicenseKey(
+        key: 'BHARAT-STD-${DateTime.now().millisecondsSinceEpoch}',
+        merchantId: profileId,
+        storeName: storeName,
+        tier: SubscriptionTier.oneYearStandard,
+        issuedAt: DateTime.now(),
+        expiresAt: DateTime.now().add(const Duration(days: 365)),
+        maxAllowedStores: 3,
+        maxStaffSeats: 5,
+        isDhandaAiEnabled: true,
+        isOnlineDukanEnabled: true,
+      );
+
+      // Save locally
+      await widget.repository.saveProfile(profile);
+      await widget.repository.saveStaff(staff);
+      await widget.repository.activateLicense(license);
+    }
 
     // If merchant explicitly requested sample items, seed them; otherwise start 100% clean!
     if (!_startEmptyStore) {
@@ -184,7 +205,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
     widget.onAuthenticated(profile, staff);
   }
 
-  void _handleSignIn() {
+  void _handleSignIn() async {
     final phone = _loginPhoneCtrl.text.trim();
     final pin = _loginPinCtrl.text.trim();
 
@@ -193,23 +214,33 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       return;
     }
 
+    setState(() => _errorMessage = '');
+
+    // 1. Try Cloud Login First (Syncs phone registered account across web & mobile!)
+    final cloudResult = await widget.repository.loginCloud(phone: phone, pin: pin);
+
+    if (cloudResult.success && cloudResult.profile != null && cloudResult.staff != null) {
+      widget.onAuthenticated(cloudResult.profile!, cloudResult.staff!);
+      return;
+    }
+
+    // 2. Offline Fallback: Check Local Database
     final allStaff = widget.repository.getAllStaff();
-    final staff = allStaff.where((s) => s.phone == phone && s.pinCode == pin).firstOrNull;
+    final localStaff = allStaff.where((s) => s.phone == phone && s.pinCode == pin).firstOrNull;
 
-    if (staff == null) {
-      setState(() => _errorMessage = 'Invalid phone number or PIN. Check your credentials or create a new account.');
-      return;
+    if (localStaff != null) {
+      final localProfile = widget.repository.getProfile(localStaff.storeProfileId) ??
+          widget.repository.getAllProfiles().firstOrNull;
+      if (localProfile != null) {
+        widget.onAuthenticated(localProfile, localStaff);
+        return;
+      }
     }
 
-    final profile = widget.repository.getProfile(staff.storeProfileId) ??
-        widget.repository.getAllProfiles().firstOrNull;
-
-    if (profile == null) {
-      setState(() => _errorMessage = 'No store profile found. Please create a business account.');
-      return;
-    }
-
-    widget.onAuthenticated(profile, staff);
+    setState(() {
+      _errorMessage = cloudResult.errorMessage ??
+          'Invalid phone number or PIN. Check your credentials or create a new account.';
+    });
   }
 
   @override

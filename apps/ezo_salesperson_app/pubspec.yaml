@@ -22,6 +22,7 @@ dependencies:
     path: ../../packages/ezo_khata_upi_whatsapp
   ezo_l10n_vernacular:
     path: ../../packages/ezo_l10n_vernacular
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

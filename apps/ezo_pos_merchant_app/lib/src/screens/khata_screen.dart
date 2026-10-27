@@ -1270,10 +1270,10 @@ class _KhataScreenState extends State<KhataScreen> with SingleTickerProviderStat
                   partyType: type,
                 );
 
-                await widget.repository.saveParty(newParty);
-
                 final messenger = ScaffoldMessenger.of(context);
                 final nav = Navigator.of(ctx);
+
+                await widget.repository.saveParty(newParty);
 
                 if (opening > 0) {
                   final initialEntry = KhataLedgerEntry(

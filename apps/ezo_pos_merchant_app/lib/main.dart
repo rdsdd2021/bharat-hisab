@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import 'src/screens/merchant_auth_screen.dart';
@@ -6,6 +7,13 @@ import 'src/theme/ezo_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Configure backend API endpoint based on device environment
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    BackendApiService.configureForDevice(isPhysicalPhone: true);
+  } else {
+    BackendApiService.configureForDevice();
+  }
 
   // Initialize embedded offline local database
   final localDb = LocalDatabase();

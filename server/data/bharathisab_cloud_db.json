@@ -1,0 +1,164 @@
+{
+  "merchants": {
+    "m_1793134720415_e3d28b14": {
+      "id": "m_1793134720415_e3d28b14",
+      "storeName": "Bharat Cloud Mart",
+      "legalEntityName": "Bharat Cloud Mart Retail",
+      "gstin": "27AABCB1234D1Z5",
+      "stateCode": "27",
+      "stateName": "Maharashtra",
+      "address": "Main Market Road",
+      "phone": "9876543210",
+      "email": "9876543210@bharathisab.com",
+      "upiId": "9876543210@upi",
+      "isGstRegistered": true,
+      "industryVertical": "kiranaGrocery",
+      "createdAt": "2026-10-27T20:58:40.418Z",
+      "lastActiveAt": "2026-10-27T21:33:03.618Z",
+      "ownerName": "Ramesh Sharma",
+      "pinHash": "2d25076f72f6c9ae682c568722b6786c64431d000c1e6485990f6a443cb5d791",
+      "pinSalt": "5aa9716396d9947cb0c2486185a98ae2",
+      "license": {
+        "key": "BH-PRO-1793134720418",
+        "merchantId": "m_1793134720415_e3d28b14",
+        "storeName": "Bharat Cloud Mart",
+        "tier": "threeYearPro",
+        "issuedAt": "2026-10-27T20:58:40.418Z",
+        "expiresAt": "2029-10-26T20:58:40.418Z",
+        "maxAllowedStores": 3,
+        "maxStaffSeats": 5,
+        "isDhandaAiEnabled": true,
+        "isOnlineDukanEnabled": true
+      }
+    },
+    "m_1793136803839_2bf0cf0d": {
+      "id": "m_1793136803839_2bf0cf0d",
+      "storeName": "Kolkata Spice Bazaar",
+      "legalEntityName": "Kolkata Spice Bazaar Retail",
+      "gstin": "",
+      "stateCode": "27",
+      "stateName": "Maharashtra",
+      "address": "Main Market Road",
+      "phone": "9830012345",
+      "email": "9830012345@bharathisab.com",
+      "upiId": "9830012345@upi",
+      "isGstRegistered": true,
+      "industryVertical": "kiranaGrocery",
+      "createdAt": "2026-10-27T21:33:23.843Z",
+      "lastActiveAt": "2026-10-27T21:34:09.246Z",
+      "ownerName": "Ramanuj Dey Sarkar",
+      "pinHash": "e9b5c43b3763879a78cb90af1a0843e796c7a94a064607414e8ce1f3b6a0547a",
+      "pinSalt": "f1438697489959fd6d219c431a0c4863",
+      "license": {
+        "key": "BH-PRO-1793136803843",
+        "merchantId": "m_1793136803839_2bf0cf0d",
+        "storeName": "Kolkata Spice Bazaar",
+        "tier": "threeYearPro",
+        "issuedAt": "2026-10-27T21:33:23.843Z",
+        "expiresAt": "2029-10-26T21:33:23.843Z",
+        "maxAllowedStores": 3,
+        "maxStaffSeats": 5,
+        "isDhandaAiEnabled": true,
+        "isOnlineDukanEnabled": true
+      }
+    }
+  },
+  "staff": {
+    "staff_owner_m_1793134720415_e3d28b14": {
+      "id": "staff_owner_m_1793134720415_e3d28b14",
+      "storeProfileId": "m_1793134720415_e3d28b14",
+      "fullName": "Ramesh Sharma",
+      "phone": "9876543210",
+      "role": "admin",
+      "pinCode": "1234",
+      "canEditPrices": true,
+      "canGiveDiscounts": true,
+      "canViewProfits": true,
+      "canDeleteBills": true,
+      "canCollectUdhaar": true,
+      "isActive": true,
+      "createdAt": "2026-10-27T20:58:40.418Z",
+      "lastActiveAt": "2026-10-27T21:33:03.618Z",
+      "pinHash": "2d25076f72f6c9ae682c568722b6786c64431d000c1e6485990f6a443cb5d791",
+      "pinSalt": "5aa9716396d9947cb0c2486185a98ae2"
+    },
+    "staff_owner_m_1793136803839_2bf0cf0d": {
+      "id": "staff_owner_m_1793136803839_2bf0cf0d",
+      "storeProfileId": "m_1793136803839_2bf0cf0d",
+      "fullName": "Ramanuj Dey Sarkar",
+      "phone": "9830012345",
+      "role": "admin",
+      "pinCode": "4321",
+      "canEditPrices": true,
+      "canGiveDiscounts": true,
+      "canViewProfits": true,
+      "canDeleteBills": true,
+      "canCollectUdhaar": true,
+      "isActive": true,
+      "createdAt": "2026-10-27T21:33:23.843Z",
+      "lastActiveAt": "2026-10-27T21:34:09.246Z",
+      "pinHash": "e9b5c43b3763879a78cb90af1a0843e796c7a94a064607414e8ce1f3b6a0547a",
+      "pinSalt": "f1438697489959fd6d219c431a0c4863"
+    }
+  },
+  "products": {
+    "m_1793134720415_e3d28b14": [],
+    "m_1793136803839_2bf0cf0d": []
+  },
+  "parties": {
+    "m_1793134720415_e3d28b14": [],
+    "m_1793136803839_2bf0cf0d": []
+  },
+  "invoices": {
+    "m_1793134720415_e3d28b14": [],
+    "m_1793136803839_2bf0cf0d": []
+  },
+  "khataEntries": {
+    "m_1793134720415_e3d28b14": [],
+    "m_1793136803839_2bf0cf0d": []
+  },
+  "licenses": {
+    "BH-PRO-1793134720418": {
+      "key": "BH-PRO-1793134720418",
+      "merchantId": "m_1793134720415_e3d28b14",
+      "storeName": "Bharat Cloud Mart",
+      "tier": "threeYearPro",
+      "issuedAt": "2026-10-27T20:58:40.418Z",
+      "expiresAt": "2029-10-26T20:58:40.418Z",
+      "maxAllowedStores": 3,
+      "maxStaffSeats": 5,
+      "isDhandaAiEnabled": true,
+      "isOnlineDukanEnabled": true
+    },
+    "BH-PRO-1793136803843": {
+      "key": "BH-PRO-1793136803843",
+      "merchantId": "m_1793136803839_2bf0cf0d",
+      "storeName": "Kolkata Spice Bazaar",
+      "tier": "threeYearPro",
+      "issuedAt": "2026-10-27T21:33:23.843Z",
+      "expiresAt": "2029-10-26T21:33:23.843Z",
+      "maxAllowedStores": 3,
+      "maxStaffSeats": 5,
+      "isDhandaAiEnabled": true,
+      "isOnlineDukanEnabled": true
+    }
+  },
+  "telemetry": {
+    "m_1793134720415_e3d28b14": {
+      "lastHeartbeat": "2026-10-27T21:33:03.618Z",
+      "terminalIp": "127.0.0.1",
+      "appVersion": "1.0.0",
+      "syncCount": 0,
+      "totalSales": 0,
+      "totalInvoices": 0
+    },
+    "m_1793136803839_2bf0cf0d": {
+      "lastHeartbeat": "2026-10-27T21:34:09.246Z",
+      "terminalIp": "127.0.0.1",
+      "appVersion": "1.0.0",
+      "syncCount": 0,
+      "totalSales": 0,
+      "totalInvoices": 0
+    }
+  }
+}

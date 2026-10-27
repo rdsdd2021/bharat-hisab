@@ -45,7 +45,7 @@ void main() {
     await repo.saveStaff(owner);
 
     // Seed 2 products
-    final p1 = ProductItem(
+    const p1 = ProductItem(
       id: 'p_atta',
       name: 'Aashirvaad Shudh Chakki Atta 5kg',
       regionalName: 'आशीर्वाद आटा',
@@ -63,7 +63,7 @@ void main() {
       showOnOnlineDukan: true,
     );
 
-    final p2 = ProductItem(
+    const p2 = ProductItem(
       id: 'p_oil',
       name: 'Fortune Sunlite Refined Oil 1L',
       regionalName: 'फॉर्च्यून तेल',
@@ -85,7 +85,7 @@ void main() {
     await repo.upsertProduct(p2);
 
     // Seed 1 customer party
-    final cust = const PartyAccount(
+    const cust = PartyAccount(
       id: 'cust_01',
       name: 'Rajesh Sharma',
       phone: '9822012345',

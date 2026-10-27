@@ -179,3 +179,36 @@ The app's [`WhiteLabelBranding`](../../packages/ezo_core_models/lib/src/models/b
 ---
 
 For architectural reference, see [Architecture Blueprint](../architecture/ARCHITECTURE.md).
+
+---
+
+## 7. Cloud Backend API Deployment
+
+The backend server is located in `server/` and provides cloud authentication, sync push/pull, and reseller fleet telemetry.
+
+### 7.1 Running Locally or via Docker
+``bash
+# 1. Install dependencies
+cd server
+npm install
+
+# 2. Start the API server on port 5000
+npm start
+``
+
+### 7.2 Containerized Production Deployment
+``dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 5000
+CMD ["node", "server.js"]
+``
+
+Run with persistent volume mounting for atomic database durability:
+``bash
+docker build -t bharathisab-backend server/
+docker run -d -p 5000:5000 -v bharathisab_data:/app/data --name bharathisab-backend-prod bharathisab-backend
+``

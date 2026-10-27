@@ -22,6 +22,7 @@ dependencies:
     path: ../ezo_online_dukan_ai
   ezo_l10n_vernacular:
     path: ../ezo_l10n_vernacular
+  http: ^1.2.0
 
 dev_dependencies:
   test: ^1.24.0

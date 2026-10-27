@@ -25,6 +25,7 @@ dependencies:
   ezo_l10n_vernacular:
     path: ../../packages/ezo_l10n_vernacular
   lucide_icons_flutter: ^3.1.25
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

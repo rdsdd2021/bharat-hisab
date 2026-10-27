@@ -16,3 +16,4 @@ export 'src/models/held_sale.dart';
 
 export 'src/storage/local_database.dart';
 export 'src/storage/offline_repository.dart';
+export 'src/services/backend_api_service.dart';

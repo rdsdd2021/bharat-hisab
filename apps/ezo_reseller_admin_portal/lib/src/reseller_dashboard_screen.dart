@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
@@ -214,10 +215,20 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
     _primaryCtrl = TextEditingController(text: _branding.primaryColorHex);
     _accentCtrl = TextEditingController(text: _branding.accentColorHex);
     _taglineCtrl = TextEditingController(text: _branding.receiptFooterTagline);
+
+    // Initial Live Cloud Fetch and Periodic Polling
+    _fetchLiveFleet(silent: true);
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) _fetchLiveFleet(silent: true);
+    });
   }
+
+  Timer? _pollingTimer;
+  final BackendApiService _apiService = BackendApiService();
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _tabCtrl.dispose();
     _appNameCtrl.dispose();
     _resellerCtrl.dispose();
@@ -228,6 +239,57 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
     _fleetSearchCtrl.dispose();
     _licenseSearchCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchLiveFleet({bool silent = false}) async {
+    if (!silent) setState(() => _isRefreshingFleet = true);
+    final data = await _apiService.getAdminMerchants(masterToken: '889900');
+    if (!mounted) return;
+    if (data != null && data['success'] == true) {
+      final list = data['merchants'] as List<dynamic>? ?? [];
+      if (list.isNotEmpty) {
+        setState(() {
+          _fleetStores.clear();
+          for (final m in list) {
+            _fleetStores.add({
+              'id': m['id'],
+              'name': m['storeName'] ?? 'Unknown Store',
+              'city': '${m['stateName'] ?? 'India'} (State ${m['stateCode'] ?? '27'})',
+              'vertical': m['vertical'] == 'restaurantCafe'
+                  ? 'Restaurant & Cafe'
+                  : m['vertical'] == 'pharmacyHealth'
+                      ? 'Healthcare & Pharma'
+                      : m['vertical'] == 'garmentsApparel'
+                          ? 'Fashion & Apparel'
+                          : m['vertical'] == 'electronicsMobile'
+                              ? 'Consumer Tech'
+                              : 'Kirana & Retail',
+              'verticalColor': m['vertical'] == 'restaurantCafe'
+                  ? const Color(0xFFEA580C)
+                  : m['vertical'] == 'pharmacyHealth'
+                      ? const Color(0xFF059669)
+                      : m['vertical'] == 'garmentsApparel'
+                          ? const Color(0xFF7C3AED)
+                          : const Color(0xFF2563EB),
+              'todaySales': (m['totalSales'] as num?)?.toDouble() ?? 0.0,
+              'todayInvoices': (m['totalInvoices'] as num?)?.toInt() ?? 0,
+              'lastSync': m['isOnline'] == true ? 'Just now' : 'Offline',
+              'isOnline': m['isOnline'] == true,
+              'queuedOutbox': 0,
+              'cashierOnDuty': m['ownerName'] ?? 'Store Owner',
+              'device': 'POS Terminal',
+              'ipAddress': '127.0.0.1',
+              'phone': m['phone'],
+              'licenseKey': m['licenseKey'],
+            });
+          }
+          _isRefreshingFleet = false;
+        });
+      }
+    }
+    if (!silent) {
+      setState(() => _isRefreshingFleet = false);
+    }
   }
 
   Color _parseHex(String hex, Color fallback) {
@@ -246,19 +308,10 @@ class _ResellerDashboardScreenState extends State<ResellerDashboardScreen> with 
   Color get _currentAccentColor => _parseHex(_branding.accentColorHex, const Color(0xFFF59E0B));
 
   void _refreshFleetTelemetry() async {
-    setState(() => _isRefreshingFleet = true);
-    await Future.delayed(const Duration(milliseconds: 600));
+    await _fetchLiveFleet(silent: false);
     if (!mounted) return;
-    setState(() {
-      for (final s in _fleetStores) {
-        if (s['isOnline'] == true) {
-          s['lastSync'] = 'Just now';
-        }
-      }
-      _isRefreshingFleet = false;
-    });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fleet heartbeat and sync telemetry refreshed successfully!')),
+      const SnackBar(content: Text('Live fleet heartbeat and sync telemetry refreshed from cloud!')),
     );
   }
 

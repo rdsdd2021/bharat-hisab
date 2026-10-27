@@ -6,12 +6,17 @@ import '../models/khata_ledger_entry.dart';
 import '../models/staff_member.dart';
 import '../models/merchant_license_key.dart';
 import '../models/sync_queue_entry.dart';
+import '../services/backend_api_service.dart';
 import 'local_database.dart';
 
 class EzoOfflineRepository {
   final LocalDatabase db;
+  final BackendApiService apiService;
 
-  EzoOfflineRepository({required this.db});
+  EzoOfflineRepository({
+    required this.db,
+    BackendApiService? apiService,
+  }) : apiService = apiService ?? BackendApiService();
 
   // --- Profile Operations ---
   Future<void> saveProfile(BusinessProfile profile) => db.saveBusinessProfile(profile);
@@ -161,4 +166,94 @@ class EzoOfflineRepository {
   // --- Reset / Switch Operations ---
   Future<void> clearAll() => db.clearAll();
   Future<void> clearProductsAndParties() => db.clearProductsAndParties();
+
+  // --- Cloud Sync & Backend Integrations ---
+  Future<AuthResult> registerCloud({
+    required String phone,
+    required String pin,
+    required String storeName,
+    String? ownerName,
+    String? vertical,
+    String? stateCode,
+    String? stateName,
+    bool isGstEnabled = true,
+  }) async {
+    final result = await apiService.register(
+      phone: phone,
+      pin: pin,
+      storeName: storeName,
+      ownerName: ownerName,
+      vertical: vertical,
+      stateCode: stateCode,
+      stateName: stateName,
+      isGstEnabled: isGstEnabled,
+    );
+
+    if (result.success && result.profile != null && result.staff != null) {
+      await db.saveBusinessProfile(result.profile!);
+      await db.saveStaffMember(result.staff!);
+      if (result.license != null) {
+        await db.saveLicense(result.license!);
+      }
+    }
+    return result;
+  }
+
+  Future<AuthResult> loginCloud({
+    required String phone,
+    required String pin,
+  }) async {
+    final result = await apiService.login(phone: phone, pin: pin);
+    if (result.success && result.profile != null && result.staff != null) {
+      await db.saveBusinessProfile(result.profile!);
+      await db.saveStaffMember(result.staff!);
+      if (result.license != null) {
+        await db.saveLicense(result.license!);
+      }
+      if (result.initialProducts.isNotEmpty) {
+        await db.saveProductsBatch(result.initialProducts);
+      }
+      for (final party in result.initialParties) {
+        await db.saveParty(party);
+      }
+      for (final invoice in result.initialInvoices) {
+        await db.saveInvoice(invoice);
+      }
+      for (final entry in result.initialKhataEntries) {
+        await db.addKhataEntry(entry);
+      }
+    }
+    return result;
+  }
+
+  Future<bool> syncWithCloud(String merchantId) async {
+    try {
+      final pending = db.getPendingSyncEntries();
+      if (pending.isNotEmpty) {
+        final pushed = await apiService.pushMutations(
+          merchantId: merchantId,
+          mutations: pending,
+        );
+        if (pushed) {
+          for (final entry in pending) {
+            await db.markSyncSuccess(entry.id);
+          }
+        }
+      }
+
+      // Pull updates
+      final updates = await apiService.pullUpdates(merchantId: merchantId);
+      if (updates != null && updates['success'] == true) {
+        final products = (updates['products'] as List<dynamic>? ?? [])
+            .map((p) => ProductItem.fromJson(p as Map<String, dynamic>))
+            .toList();
+        if (products.isNotEmpty) {
+          await db.saveProductsBatch(products);
+        }
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }

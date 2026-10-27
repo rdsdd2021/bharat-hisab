@@ -207,3 +207,42 @@ scripts:
 ```
 
 For package API specifications and usage guides, refer to [Packages API Reference](../packages/PACKAGES_API_REFERENCE.md).
+
+---
+
+## 6. Central Cloud Backend & Synchronized Offline-First Architecture
+
+To eliminate device database sandboxing (where mobile and web apps could not share accounts or inventory), BharatHisab POS uses a hybrid client-cloud synchronization architecture:
+
+```
++------------------------------------+        +-----------------------------------+
+|  BharatHisab Android Mobile App    |        |   BharatHisab Merchant Web App    |
+|   (SQLite / SharedPreferences)     |        |   (IndexedDB / LocalStorage)      |
++-----------------+------------------+        +-----------------+-----------------+
+                  |                                             |
+                  |  HTTP REST + PBKDF2 Auth & JSON Sync Push   |
+                  +---------------------+-----------------------+
+                                        |
+                                        v
+                       +---------------------------------+
+                       |    Central Cloud Backend API    |
+                       |       (Node.js / Express)       |
+                       |  - PBKDF2-SHA256 Auth Hashing   |
+                       |  - Rate-Limited PIN Auth        |
+                       |  - Delta Sync Push & Pull       |
+                       |  - Fleet Telemetry for Admin    |
+                       +----------------+----------------+
+                                        |
+                                        v
+                       +---------------------------------+
+                       |   Superadmin & Reseller Tower   |
+                       |    Live Fleet Telemetry (Poll)  |
+                       +---------------------------------+
+```
+
+### Core Endpoints:
+1. `POST /api/v1/auth/register`: Central registration that hashes PINs with unique 16-byte random salts using PBKDF2-SHA256 (10,000 iterations), provisions a commercial 3-year Pro license, and initializes a merchant tenancy.
+2. `POST /api/v1/auth/login`: Authenticates store staff with rate-limiting protection (locks out IP + phone combinations exceeding 5 failed attempts for 5 minutes).
+3. `POST /api/v1/sync/push`: Incremental sync of products, parties, invoices, and khata entries.
+4. `GET /api/v1/sync/pull`: Fetches the latest cloud catalog and ledger state.
+5. `GET /api/v1/admin/merchants`: Real-time fleet telemetry monitoring live tenant volume, transaction counts, and store health.
