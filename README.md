@@ -35,6 +35,8 @@ bharat_hisab_workspace/
 │   ├── ezo_khata_upi_whatsapp        # Double-sided Udhaar ledger, UPI dynamic QR & WhatsApp links
 │   ├── ezo_online_dukan_ai           # WhatsApp Online Dukan, Dhanda AI audit & NearSearch SEO
 │   └── ezo_l10n_vernacular           # 10 Indian regional languages (en, hi, bn, mr, gu, te, ta, kn, ml, pa)
+│
+└── server/                           # Node.js/Express Central Cloud API & Sync Backend (Port 5000)
 ```
 
 ---
@@ -103,17 +105,23 @@ melos bootstrap
 # 2. Run static analyzer across all packages and apps
 melos run analyze
 
-# 3. Execute all unit and integration tests (42 passing tests)
+# 3. Execute all unit, widget, and integration tests (58 passing tests)
 melos run test
 
-# 4. Launch Flagship Merchant POS App
+# 4. Start Central Cloud API Backend (Node.js on port 5000)
+cd server
+npm start
+
+# 5. Launch Flagship Merchant POS App
 cd apps/ezo_pos_merchant_app
 flutter run
 
-# 5. Launch Superadmin Reseller Console
+# 6. Launch Superadmin Reseller Console
 cd apps/ezo_reseller_admin_portal
 flutter run -d chrome
 ```
+
+For the full revision history, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

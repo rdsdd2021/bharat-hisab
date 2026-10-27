@@ -53,6 +53,13 @@ The telemetry table streams live heartbeats from every POS terminal:
 > [!NOTE]
 > When a merchant operates offline (e.g., *Sanjivani Medicos* with 4 queued bills), their local database continues billing without latency. The outbox count automatically decrements and resets to *Online* as soon as connectivity resumes.
 
+### 2.3 Real-Time Fleet Telemetry API
+The Control Tower no longer relies on static fixtures; it communicates dynamically with the central cloud backend:
+- **Telemetry Endpoint**: GET /api/v1/admin/merchants
+- **Security & Authorization**: Protected by Authorization: Bearer <ADMIN_BEARER_TOKEN>
+- **Live Auto-Refresh**: Polls the cloud every 5 seconds to capture newly registered stores, staff log-ins, invoice additions, and sync heartbeat timestamps.
+- **Dynamic Key Issuance**: POST /api/v1/admin/license/issue registers cryptographic licenses directly in the cloud database, enabling instant license recognition across the merchant's physical terminals.
+
 ---
 
 ## 3. Commercial License Generation & Quota Management

@@ -131,4 +131,30 @@ Audit your store's Google Business Profile, reply to reviews using AI, and gener
 
 ---
 
+## Tutorial 6: Cross-Device Multi-Terminal Verification (Android Phone to Web Counter)
+
+### Objective:
+Register a store on the Android APK and seamlessly log into the same store on your desktop web counter, verifying cloud sync.
+
+### Steps:
+1. **Mobile Setup & Registration**:
+   - Install BharatHisab_POS_v1.0.0_arm64-v8a.apk on your Android phone.
+   - Connect phone to your local Wi-Fi.
+   - Tap **Sign Up** tab on the login screen.
+   - Enter Store Name (e.g. *Metro Kirana Mart*), 10-digit Phone (9876543210), and 4-digit PIN (1234).
+   - Tap **Create My Store**.
+   - Your store is initialized locally and registered on the central cloud backend with an enterprise 3-year license!
+2. **Web Desktop Counter Access**:
+   - Open your desktop PC browser to [http://localhost:8090](http://localhost:8090).
+   - Tap **Sign In** tab.
+   - Enter the same phone number (9876543210) and PIN (1234).
+   - Tap **Sign In**.
+   - The web app connects to the cloud backend, verifies credentials against the PBKDF2 hash, and pulls your store profile, staff permissions, and catalog immediately.
+3. **Superadmin Verification**:
+   - Open [http://localhost:8091](http://localhost:8091).
+   - Enter master admin credentials: dmin@bharathisab.com / 889900.
+   - In the **Cloud Fleet Analytics** tab, observe *Metro Kirana Mart* listed live with 100% sync health.
+
+---
+
 For architectural details, refer to [Monorepo Architecture](../architecture/ARCHITECTURE.md).

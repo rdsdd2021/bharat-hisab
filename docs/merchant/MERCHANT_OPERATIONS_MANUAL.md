@@ -27,6 +27,12 @@ If you start clean, you do not need to navigate deep into settings to stock your
 - **Lock Register**: Tap the Cashier profile badge in the top navigation bar and select **"Lock Register & Switch Cashier"**.
 - **Wipe Slate (Testing Mode)**: Go to **Settings** $\rightarrow$ **Session & Store Management** $\rightarrow$ Tap **"Reset Clean Slate"**. Confirming erases local data and brings you back to the signup screen to test fresh store creation.
 
+### 0.4 Cross-Device Multi-Terminal Sync (Phone & Web Login)
+- **Central Cloud Registration**: When registering your store on the Android APK, your account is automatically provisioned in the central BharatHisab cloud database with a 3-year commercial Pro license.
+- **Accessing Web from Desktop Counter**: Open http://localhost:8090 on your desktop browser. Enter the **exact same 10-digit mobile number and 4-digit PIN** and tap **Sign In**.
+- **Real-Time Synchronized State**: Invoices created on the mobile terminal automatically sync to the cloud backend and reflect on the desktop web counter and Superadmin console.
+- **Offline Resiliency**: If your Wi-Fi or broadband drops, both mobile and web terminals continue checkout without delay. Transactions queue in the local outbox and synchronize automatically upon reconnection.
+
 ---
 
 ## 1. Daily Cashier Routine & Shift Opening

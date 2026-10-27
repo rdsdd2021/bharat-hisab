@@ -8,12 +8,13 @@ This suite is engineered as a production-grade, offline-first Flutter Melos Mono
 
 ## 🌐 Live Local Web Endpoints & Testing Services
 
-All three applications can be served concurrently locally via the integrated multi-daemon:
+All applications and backend services can be served concurrently locally via the integrated multi-daemon:
 
-| Application | Local Web Endpoint | Target Role | Key Features |
+| Service / App | Local Endpoint | Target Role | Key Features |
 |---|---|---|---|
+| **Cloud Backend API** | [http://localhost:5000](http://localhost:5000) | Central Service | PBKDF2 auth, cross-platform registration, rate-limiting, sync push/pull, admin telemetry |
 | **Merchant POS App** | [http://localhost:8090](http://localhost:8090) | Store Owners & Cashiers | Account signup, clean slate counter, quick SKU add, GST billing, Khata udhaar, thermal receipt generator |
-| **Superadmin Portal** | [http://localhost:8091](http://localhost:8091) | Resellers & App Admins | Master admin authentication, tenant fleet telemetry, license key generator, agency white-labeling |
+| **Superadmin Portal** | [http://localhost:8091](http://localhost:8091) | Resellers & App Admins | Master admin authentication, live tenant fleet telemetry, license key generator, agency white-labeling |
 | **Salesperson App** | [http://localhost:8092](http://localhost:8092) | Field Sales Agents | Field agent login, catalog browsing, offline order booking, doorstep Khata collection |
 
 ---
@@ -24,8 +25,8 @@ Release split-per-ABI builds are maintained under `outputs/`:
 
 | Architecture | APK File | Size | Suitable Devices |
 |---|---|---|---|
-| **64-bit ARM** | `BharatHisab_POS_v1.0.0_arm64-v8a.apk` | **18.5 MB** | Modern Android smartphones (2017+) |
-| **32-bit ARM** | `BharatHisab_POS_v1.0.0_armeabi-v7a.apk` | **16.1 MB** | Budget phones, Sunmi/iMin handheld POS devices |
+| **64-bit ARM** | `BharatHisab_POS_v1.0.0_arm64-v8a.apk` | **20.3 MB** | Modern Android smartphones (2017+) |
+| **32-bit ARM** | `BharatHisab_POS_v1.0.0_armeabi-v7a.apk` | **17.8 MB** | Budget phones, Sunmi/iMin handheld POS devices |
 
 ---
 
@@ -39,9 +40,10 @@ Release split-per-ABI builds are maintained under `outputs/`:
 | **Packages API** | [Packages API Reference](packages/PACKAGES_API_REFERENCE.md) | Flutter Developers | Detailed API guide and code snippets for all 7 domain packages (`ezo_core_models`, `ezo_gst_tax_engine`, etc.). |
 | **Store Operator Manual** | [Merchant Operations Manual](merchant/MERCHANT_OPERATIONS_MANUAL.md) | Store Cashiers & Managers | Real signup, clean slate counter, quick item addition, high-speed billing, Khata ledger, and shift lock. |
 | **Industry Verticals** | [Industry Verticals Playbook](merchant/INDUSTRY_VERTICALS_PLAYBOOK.md) | Store Owners & Onboarding | Tailored workflows for Kirana/Grocery, Restaurant/Cafe (KOT), Pharmacy (Batch/Exp), Garments, and Electronics (IMEI). |
-| **Superadmin & Reseller** | [Superadmin & Reseller Guide](superadmin/SUPERADMIN_AND_RESELLER_GUIDE.md) | SaaS Resellers & Franchisors | Master admin login, multi-tenant commercial key generator, quota enforcement, and fleet analytics. |
+| **Superadmin & Reseller** | [Superadmin & Reseller Guide](superadmin/SUPERADMIN_AND_RESELLER_GUIDE.md) | SaaS Resellers & Franchisors | Master admin login, multi-tenant commercial key generator, quota enforcement, and live fleet analytics. |
 | **Step-by-Step Tutorials** | [Tutorials & Walkthroughs](tutorials/TUTORIALS_AND_WALKTHROUGHS.md) | All Users | Hands-on guides: Real Account Setup, Clean Slate Billing, Thermal Bluetooth pairing, and Udhaar recovery. |
 | **Build & Deployment** | [Deployment & Packaging Guide](deployment/DEPLOYMENT_AND_PACKAGING.md) | DevOps & Release Engineers | Melos CI/CD commands, split-per-ABI APK optimization, Windows Desktop packaging, and Web hosting. |
+| **Release Changelog** | [Project Changelog](../CHANGELOG.md) | All Developers | Comprehensive version history, breaking changes, new feature notes, and security hardening. |
 
 ---
 
@@ -62,6 +64,8 @@ ezo_pos_workspace/
 │   ├── ezo_khata_upi_whatsapp        # Double-sided Udhaar ledger, UPI dynamic QR & WhatsApp links
 │   ├── ezo_online_dukan_ai           # WhatsApp Online Dukan, Dhanda AI audit & NearSearch SEO schemas
 │   └── ezo_l10n_vernacular           # 10 Indian regional languages (en, hi, bn, mr, gu, te, ta, kn, ml, pa)
+│
+└── server/                           # Node.js/Express Central Cloud API & Sync Backend (Port 5000)
 ```
 
 ---
