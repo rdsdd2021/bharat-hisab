@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.4.0] - 2026-10-28
+
+### 🚀 Added
+- **Native Android Bluetooth SPP Thermal Printer Driver**:
+  - Implemented low-level RFCOMM Bluetooth socket communication (`UUID: 00001101-0000-1000-8000-00805F9B34FB`) via native Kotlin method channel `com.bharathisab.pos/bluetooth_printer` in `MainActivity.kt`.
+  - Supports live printer discovery, bonded/paired device retrieval, raw ESC/POS byte streaming, socket keep-alive, and clean disconnection.
+  - Added Android runtime and manifest permissions for Bluetooth discovery and communication (`BLUETOOTH`, `BLUETOOTH_ADMIN`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`).
+  - Seamless fallback to virtual preview and browser print dialog on Web/Desktop targets.
+- **In-App Bluetooth Device Scanner Modal (`BluetoothPrinterScannerModal`)**:
+  - Accessible directly from `ReceiptPreviewModal` via persistent "Printers" action button and quick-reconnect prompts.
+  - Lists paired Bluetooth thermal printers with live connection status, MAC address badges, and one-tap connection.
+  - "Search Nearby" button for discovering unbonded active thermal printers over Bluetooth radio.
+  - "Test Slip" button that generates and dispatches an authentic ESC/POS self-test receipt with alignment, font scaling, and cutter verification.
+- **Dynamic Hardware Transport Driver Registry**:
+  - Upgraded `ThermalPrinterConnectionManager` in `packages/ezo_thermal_printer_escpos` with `registerTransportDriver` to support dynamic transport driver switching at runtime.
+  - Implemented `AndroidBluetoothPrinterDriver` registered automatically on Android app initialization.
+
+### 🐛 Fixed
+- **ESC/POS Latin-1 Unicode Character Encoding**:
+  - Resolved runtime `ArgumentError` when printing receipts containing non-Latin1 characters (such as bullets `•` and rupee symbols `₹`).
+  - Added automated sanitization replacing Unicode characters with standard ASCII equivalents prior to raw byte encoding.
+
+### 🧪 Automated Verification
+- Added `test/bluetooth_printer_hardware_test.dart` verifying Android Bluetooth driver fallback, dynamic connection manager delegation, and full interactive scanner modal UI/actions.
+- All 28 automated tests across 5 test suites pass 100% green.
+
+---
+
 ## [1.3.0] - 2026-10-28
 
 ### 🐛 Fixed

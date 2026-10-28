@@ -398,7 +398,14 @@ class EscPosThermalEngine {
   }
 
   static List<int> _encodeText(String text) {
-    return latin1.encode(text);
+    final safeText = text
+        .replaceAll('•', '-')
+        .replaceAll('₹', 'Rs.')
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('‘', "'")
+        .replaceAll('’', "'");
+    return latin1.encode(safeText.replaceAll(RegExp(r'[^\x00-\xFF]'), '?'));
   }
 
   static String _formatRow(List<String> items, List<int> widths) {

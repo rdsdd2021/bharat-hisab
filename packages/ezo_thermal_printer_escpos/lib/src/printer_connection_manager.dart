@@ -15,6 +15,7 @@ class DiscoveredPrinterDevice {
   final PrinterConnectionType connectionType;
   final String address; // MAC address or USB port ID
   final bool isConnected;
+  final bool isBonded;
 
   const DiscoveredPrinterDevice({
     required this.id,
@@ -22,7 +23,26 @@ class DiscoveredPrinterDevice {
     required this.connectionType,
     required this.address,
     this.isConnected = false,
+    this.isBonded = false,
   });
+
+  DiscoveredPrinterDevice copyWith({
+    String? id,
+    String? name,
+    PrinterConnectionType? connectionType,
+    String? address,
+    bool? isConnected,
+    bool? isBonded,
+  }) {
+    return DiscoveredPrinterDevice(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      connectionType: connectionType ?? this.connectionType,
+      address: address ?? this.address,
+      isConnected: isConnected ?? this.isConnected,
+      isBonded: isBonded ?? this.isBonded,
+    );
+  }
 }
 
 abstract class PrinterTransportDriver {
@@ -30,6 +50,7 @@ abstract class PrinterTransportDriver {
   Future<void> disconnect();
   Future<bool> sendBytes(Uint8List bytes);
   bool get isConnected;
+  Future<List<DiscoveredPrinterDevice>> scanDevices({bool activeDiscovery = false});
 }
 
 class VirtualMonospacePrinterDriver implements PrinterTransportDriver {
@@ -60,6 +81,40 @@ class VirtualMonospacePrinterDriver implements PrinterTransportDriver {
     _streamController.add(bytes);
     return true;
   }
+
+  @override
+  Future<List<DiscoveredPrinterDevice>> scanDevices({bool activeDiscovery = false}) async {
+    return [
+      const DiscoveredPrinterDevice(
+        id: 'BT_58MM_01',
+        name: 'Bharat Chota 58mm Bluetooth',
+        connectionType: PrinterConnectionType.bluetoothSpp,
+        address: '00:11:22:33:44:55',
+        isBonded: true,
+      ),
+      const DiscoveredPrinterDevice(
+        id: 'BT_80MM_02',
+        name: 'Bharat Bada 80mm Bluetooth',
+        connectionType: PrinterConnectionType.bluetoothSpp,
+        address: '66:77:88:99:AA:BB',
+        isBonded: true,
+      ),
+      const DiscoveredPrinterDevice(
+        id: 'USB_POS_80',
+        name: 'USB Thermal Receipt Printer',
+        connectionType: PrinterConnectionType.usbOtg,
+        address: 'USB_PORT_01',
+        isBonded: false,
+      ),
+      const DiscoveredPrinterDevice(
+        id: 'VIRTUAL_SCREEN',
+        name: 'Virtual On-Screen Monospace Preview',
+        connectionType: PrinterConnectionType.virtualPreview,
+        address: '127.0.0.1',
+        isBonded: false,
+      ),
+    ];
+  }
 }
 
 class ThermalPrinterConnectionManager {
@@ -74,40 +129,14 @@ class ThermalPrinterConnectionManager {
 
   DiscoveredPrinterDevice? get activeDevice => _activeDevice;
   bool get isConnected => _driver.isConnected;
+  PrinterTransportDriver get currentDriver => _driver;
 
   void registerTransportDriver(PrinterTransportDriver customDriver) {
     _driver = customDriver;
   }
 
-  Future<List<DiscoveredPrinterDevice>> scanForPrinters() async {
-    // Returns simulated local devices if hardware bridge not attached
-    final devices = [
-      const DiscoveredPrinterDevice(
-        id: 'BT_58MM_01',
-        name: 'Bharat Chota 58mm Bluetooth',
-        connectionType: PrinterConnectionType.bluetoothSpp,
-        address: '00:11:22:33:44:55',
-      ),
-      const DiscoveredPrinterDevice(
-        id: 'BT_80MM_02',
-        name: 'Bharat Bada 80mm Bluetooth',
-        connectionType: PrinterConnectionType.bluetoothSpp,
-        address: '66:77:88:99:AA:BB',
-      ),
-      const DiscoveredPrinterDevice(
-        id: 'USB_POS_80',
-        name: 'USB Thermal Receipt Printer',
-        connectionType: PrinterConnectionType.usbOtg,
-        address: 'USB_PORT_01',
-      ),
-      const DiscoveredPrinterDevice(
-        id: 'VIRTUAL_SCREEN',
-        name: 'Virtual On-Screen Monospace Preview',
-        connectionType: PrinterConnectionType.virtualPreview,
-        address: '127.0.0.1',
-      ),
-    ];
-    return devices;
+  Future<List<DiscoveredPrinterDevice>> scanForPrinters({bool activeDiscovery = false}) async {
+    return _driver.scanDevices(activeDiscovery: activeDiscovery);
   }
 
   Future<bool> connectPrinter(DiscoveredPrinterDevice device) async {
@@ -119,6 +148,7 @@ class ThermalPrinterConnectionManager {
         connectionType: device.connectionType,
         address: device.address,
         isConnected: true,
+        isBonded: device.isBonded,
       );
       if (!_pairedDevices.any((d) => d.id == device.id)) {
         _pairedDevices.add(_activeDevice!);
@@ -129,15 +159,7 @@ class ThermalPrinterConnectionManager {
 
   Future<void> disconnectPrinter() async {
     await _driver.disconnect();
-    if (_activeDevice != null) {
-      _activeDevice = DiscoveredPrinterDevice(
-        id: _activeDevice!.id,
-        name: _activeDevice!.name,
-        connectionType: _activeDevice!.connectionType,
-        address: _activeDevice!.address,
-        isConnected: false,
-      );
-    }
+    _activeDevice = null;
   }
 
   Future<bool> printBytes(Uint8List bytes) async {

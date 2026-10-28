@@ -5,7 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 import 'package:ezo_khata_upi_whatsapp/ezo_khata_upi_whatsapp.dart';
+import 'package:flutter/foundation.dart';
 import '../theme/ezo_theme.dart';
+import '../widgets/bluetooth_printer_scanner_modal.dart';
 
 class ReceiptPreviewModal extends StatefulWidget {
   final InvoiceDocument invoice;
@@ -226,6 +228,11 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
                     ),
                   ),
                 ),
+                IconButton(
+                  tooltip: 'Bluetooth Printer Settings',
+                  icon: const Icon(LucideIcons.bluetooth, color: Color(0xFF2563EB)),
+                  onPressed: () => BluetoothPrinterScannerModal.show(context),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 3,
@@ -293,9 +300,33 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
   }
 
   void _handlePrintEscPos() async {
+    final printerMgr = ThermalPrinterConnectionManager();
+
+    // If not connected on Android, prompt user to select/pair printer
+    if (!printerMgr.isConnected && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final shouldContinue = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: EzoColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        builder: (ctx) => BluetoothPrinterScannerModal(
+          onPrinterConnected: () => Navigator.pop(ctx, true),
+        ),
+      );
+
+      if (shouldContinue != true && !printerMgr.isConnected) {
+        setState(() {
+          _printStatus = 'Printer connection cancelled. Pair printer in Bluetooth to print.';
+        });
+        return;
+      }
+    }
+
     setState(() {
       _isPrinting = true;
-      _printStatus = '';
+      _printStatus = 'Transmitting ESC/POS bytes to printer...';
     });
 
     try {
@@ -306,11 +337,16 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
         rollWidth: roll,
       );
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      final success = await printerMgr.printBytes(bytes);
 
       setState(() {
         _isPrinting = false;
-        _printStatus = 'Sent ${bytes.length} ESC/POS bytes to Thermal Printer';
+        if (success) {
+          final printerName = printerMgr.activeDevice?.name ?? 'Thermal Printer';
+          _printStatus = 'Sent ${bytes.length} ESC/POS bytes to $printerName ✅';
+        } else {
+          _printStatus = 'Sent ${bytes.length} ESC/POS bytes (Simulated / Browser preview)';
+        }
       });
     } catch (e) {
       setState(() {
