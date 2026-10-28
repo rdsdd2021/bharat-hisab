@@ -6,6 +6,8 @@ import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_inventory_barcode/ezo_inventory_barcode.dart';
 import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 import '../theme/ezo_theme.dart';
+import '../widgets/barcode_scanner_modal.dart';
+import '../widgets/product_image_picker.dart';
 
 class InventoryScreen extends StatefulWidget {
   final EzoOfflineRepository repository;
@@ -395,23 +397,41 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         child: Row(
                           children: [
-                            // Category Icon / Avatar
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: EzoColors.primaryLight,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  p.category.isNotEmpty ? p.category[0].toUpperCase() : 'P',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                    color: EzoColors.primary,
-                                  ),
+                            // Category Icon / Avatar / Product Image
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: EzoColors.primaryLight,
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                                child: p.imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        p.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Center(
+                                          child: Text(
+                                            p.category.isNotEmpty ? p.category[0].toUpperCase() : 'P',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                              color: EzoColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          p.category.isNotEmpty ? p.category[0].toUpperCase() : 'P',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                            color: EzoColors.primary,
+                                          ),
+                                        ),
+                                      ),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -931,6 +951,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     ItemUnit unit = ItemUnit.pcs;
     double gstVal = 5.0;
     bool showOnOnlineDukan = true;
+    String imageUrl = '';
 
     showDialog(
       context: context,
@@ -950,6 +971,11 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ProductImagePicker(
+                  currentImageUrl: imageUrl,
+                  onImageChanged: (url) => setDlgState(() => imageUrl = url),
+                ),
+                const SizedBox(height: 10),
                 TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Product Name *', hintText: 'e.g. Fortune Rice 5kg')),
                 const SizedBox(height: 8),
                 TextField(controller: regionalCtrl, decoration: const InputDecoration(labelText: 'Regional / Vernacular Name', hintText: 'e.g. चावल / ভাত')),
@@ -966,7 +992,27 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                     Expanded(
                       child: TextField(
                         controller: barcodeCtrl,
-                        decoration: const InputDecoration(labelText: 'Barcode (EAN-13)', hintText: 'Scan or type'),
+                        decoration: InputDecoration(
+                          labelText: 'Barcode (EAN-13)',
+                          hintText: 'Scan or type',
+                          suffixIcon: IconButton(
+                            icon: const Icon(LucideIcons.camera, color: EzoColors.primary, size: 18),
+                            tooltip: 'Scan Barcode with Camera / Scanner',
+                            onPressed: () {
+                              BarcodeScannerModal.show(
+                                context,
+                                onBarcodeScanned: (code) {
+                                  setDlgState(() {
+                                    barcodeCtrl.text = code;
+                                    if (skuCtrl.text.trim().isEmpty) {
+                                      skuCtrl.text = code;
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1101,6 +1147,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   currentStock: stock,
                   lowStockThreshold: lowStock,
                   showOnOnlineDukan: showOnOnlineDukan,
+                  imageUrl: imageUrl,
                 );
 
                 await widget.repository.upsertProduct(newProduct);
@@ -1137,6 +1184,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     ItemUnit unit = product.unit;
     double gstVal = product.gstPercent;
     bool showOnOnlineDukan = product.showOnOnlineDukan;
+    String imageUrl = product.imageUrl;
 
     showDialog(
       context: context,
@@ -1158,6 +1206,11 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ProductImagePicker(
+                  currentImageUrl: imageUrl,
+                  onImageChanged: (url) => setDlgState(() => imageUrl = url),
+                ),
+                const SizedBox(height: 10),
                 TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Product Name *')),
                 const SizedBox(height: 8),
                 TextField(controller: regionalCtrl, decoration: const InputDecoration(labelText: 'Regional / Vernacular Name')),
@@ -1166,7 +1219,26 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   children: [
                     Expanded(child: TextField(controller: skuCtrl, decoration: const InputDecoration(labelText: 'SKU Code'))),
                     const SizedBox(width: 8),
-                    Expanded(child: TextField(controller: barcodeCtrl, decoration: const InputDecoration(labelText: 'Barcode (EAN-13)'))),
+                    Expanded(
+                      child: TextField(
+                        controller: barcodeCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Barcode (EAN-13)',
+                          suffixIcon: IconButton(
+                            icon: const Icon(LucideIcons.camera, color: EzoColors.primary, size: 18),
+                            tooltip: 'Scan Barcode with Camera / Scanner',
+                            onPressed: () {
+                              BarcodeScannerModal.show(
+                                context,
+                                onBarcodeScanned: (code) {
+                                  setDlgState(() => barcodeCtrl.text = code);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1311,6 +1383,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   hsnSacCode: hsnCtrl.text.trim(),
                   gstPercent: gstVal,
                   showOnOnlineDukan: showOnOnlineDukan,
+                  imageUrl: imageUrl,
                 );
 
                 await widget.repository.upsertProduct(updated);

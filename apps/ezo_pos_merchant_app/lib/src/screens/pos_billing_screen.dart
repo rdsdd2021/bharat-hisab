@@ -6,6 +6,8 @@ import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_khata_upi_whatsapp/ezo_khata_upi_whatsapp.dart';
 import '../controllers/pos_billing_controller.dart';
 import '../theme/ezo_theme.dart';
+import '../widgets/barcode_scanner_modal.dart';
+import '../widgets/product_image_picker.dart';
 import 'receipt_preview_modal.dart';
 
 class PosBillingScreen extends StatefulWidget {
@@ -600,22 +602,40 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: EzoColors.primaryLight,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Center(
-                    child: Text(
-                      item.name.isNotEmpty ? item.name[0] : 'P',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: EzoColors.primary,
-                      ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: EzoColors.primaryLight,
+                      borderRadius: BorderRadius.circular(6),
                     ),
+                    child: item.imageUrl.isNotEmpty
+                        ? Image.network(
+                            item.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                item.name.isNotEmpty ? item.name[0] : 'P',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: EzoColors.primary,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              item.name.isNotEmpty ? item.name[0] : 'P',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: EzoColors.primary,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 Container(
@@ -1340,19 +1360,36 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
 
     return Expanded(
       child: InkWell(
-        onTap: () {
-          c.setSettlementMode(mode);
-          if (mode == SettlementMode.creditUdhaar && c.selectedCustomer == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Please select or add a Customer for Udhaar (Credit) billing!'),
-                backgroundColor: Color(0xFFEA580C),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            _showCustomerSelectorModal(context, c);
+        onTap: () async {
+          if (mode == SettlementMode.creditUdhaar) {
+            if (c.selectedCustomer == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please select or add a Customer for Udhaar (Credit) billing!'),
+                  backgroundColor: Color(0xFFEA580C),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              await _showCustomerSelectorModal(context, c);
+              if (c.selectedCustomer == null) {
+                c.setSettlementMode(SettlementMode.cash);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No customer selected. Billing remains in Cash mode.'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+                return;
+              }
+            }
+            c.setSettlementMode(SettlementMode.creditUdhaar);
           } else if (mode == SettlementMode.upiQr) {
+            c.setSettlementMode(mode);
             _showUpiQrPaymentDialog(context, c);
+          } else {
+            c.setSettlementMode(mode);
           }
         },
         borderRadius: BorderRadius.circular(8),
@@ -1736,6 +1773,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
     final stockCtrl = TextEditingController(text: '50');
     final hsnCtrl = TextEditingController(text: '1006');
     double gstVal = 5.0;
+    String imageUrl = '';
 
     showDialog(
       context: context,
@@ -1751,6 +1789,11 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                ProductImagePicker(
+                  currentImageUrl: imageUrl,
+                  onImageChanged: (url) => setDlgState(() => imageUrl = url),
+                ),
+                const SizedBox(height: 10),
                 TextField(
                   controller: nameCtrl,
                   autofocus: true,
@@ -1762,9 +1805,21 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: skuCtrl,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Barcode / SKU Code',
                     hintText: 'Leave blank to auto-generate',
+                    suffixIcon: IconButton(
+                      icon: const Icon(LucideIcons.camera, color: EzoColors.primary, size: 18),
+                      tooltip: 'Scan Barcode with Camera / Scanner',
+                      onPressed: () {
+                        BarcodeScannerModal.show(
+                          context,
+                          onBarcodeScanned: (code) {
+                            setDlgState(() => skuCtrl.text = code);
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1862,6 +1917,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                   isTaxInclusive: true,
                   currentStock: stock,
                   lowStockThreshold: 10.0,
+                  imageUrl: imageUrl,
                 );
 
                 await c.repository.upsertProduct(item);
@@ -2459,10 +2515,10 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
     );
   }
 
-  void _showCustomerSelectorModal(BuildContext context, PosBillingController c) {
+  Future<void> _showCustomerSelectorModal(BuildContext context, PosBillingController c) async {
     final searchCustCtrl = TextEditingController();
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: EzoColors.surface,
@@ -2580,6 +2636,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                 InkWell(
                   onTap: () {
                     c.setCustomer(null);
+                    c.setSettlementMode(SettlementMode.cash);
                     Navigator.pop(ctx);
                   },
                   borderRadius: BorderRadius.circular(10),

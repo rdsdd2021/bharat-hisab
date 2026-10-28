@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.3.0] - 2026-10-28
+
+### 🐛 Fixed
+- **Udhaar Sticky / Defaulting Bug**:
+  - Resolved root cause where previous deferred/credit (Udhaar) transactions or cancelled bills kept settlement mode sticky on Udhaar for subsequent sales.
+  - Cart clearance (clearCart) and invoice completion (commitInvoice) now strictly reset settlement mode to standard Cash (SettlementMode.cash).
+  - Emptying cart (removeCartLine) and resuming parked sales (resumeHeldSale) default to Cash.
+  - In POS UI, selecting Udhaar mode prompts for an attached customer account first; if user dismisses or cancels the customer selector modal without picking a customer, billing automatically reverts to Cash with user notification.
+  - Tapping Walk-in Cash Customer explicitly clears customer and resets settlement mode to Cash.
+
+### 🚀 Added
+- **Product Media Attachment (ProductImagePicker)**:
+  - Interactive photo container in Add and Edit SKU dialogs (Inventory Management) and Quick Add SKU dialog (POS Billing Counter).
+  - Multi-source image input:
+    - Camera capture snapshot flow.
+    - Direct web URL / file link input.
+    - 12 curated retail catalog presets (Atta, Rice, Milk, Cooking Oil, Biscuits, Spices, Tea/Coffee, Soaps, Pharma, Garments, Electronics, Fruits/Veg).
+  - Responsive thumbnail preview card with change and delete actions.
+  - Product thumbnails rendered in inventory list tiles and POS shelf item cards with category fallback avatars.
+- **Auto-Fill Optical Barcode Scanner (BarcodeScannerModal)**:
+  - Dedicated scan button next to Barcode and SKU input fields across both Inventory and POS Quick-Add dialogs.
+  - Interactive camera viewfinder with animated laser guide, torch/flashlight toggle, and camera flip.
+  - Real-time hardware USB/Bluetooth barcode scanner HID listener.
+  - 1-tap optical capture and EAN-13 simulation with haptic feedback.
+  - Automatically injects the scanned code into Barcode and SKU fields without manual typing.
+- **Automated Verification**:
+  - Added udhaar_reset_and_item_media_test.dart verifying Udhaar resets to Cash across commits, cancellations, and line removals, as well as ProductImagePicker presets and BarcodeScannerModal callbacks.
+  - 100% green test suite across 68 automated tests in 11 test suites.
+
+---
+
 ## [1.2.0] - 2026-10-28
 
 ### 🚀 Added

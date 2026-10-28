@@ -331,6 +331,8 @@ class PosBillingController extends ChangeNotifier {
     _cartLines.clear();
     _cartLines.addAll(held.cartLines);
     _selectedCustomer = held.customer;
+    _settlementMode = SettlementMode.cash; // Default resumed cart to Cash
+    _customAmountReceived = null;
     _recalculateCart();
     notifyListeners();
     return true;
@@ -345,6 +347,10 @@ class PosBillingController extends ChangeNotifier {
   void removeCartLine(int index) {
     if (index >= 0 && index < _cartLines.length) {
       _cartLines.removeAt(index);
+      if (_cartLines.isEmpty) {
+        _settlementMode = SettlementMode.cash;
+        _customAmountReceived = null;
+      }
       notifyListeners();
     }
   }
@@ -355,6 +361,13 @@ class PosBillingController extends ChangeNotifier {
     _customAmountReceived = null;
     _customFields = const InvoiceCustomFields();
     _selectedCustomer = null;
+    _settlementMode = SettlementMode.cash; // Always reset to standard Cash transaction
+    notifyListeners();
+  }
+
+  void resetToCash() {
+    _settlementMode = SettlementMode.cash;
+    _customAmountReceived = null;
     notifyListeners();
   }
 
