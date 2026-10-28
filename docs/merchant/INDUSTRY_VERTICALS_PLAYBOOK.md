@@ -119,4 +119,25 @@ Designed for smartphone stores, consumer electronics, computer hardware, and ele
 
 ---
 
-To run or test the onboarding wizard, open [`apps/ezo_pos_merchant_app/lib/src/screens/industry_onboarding_wizard_screen.dart`](../../apps/ezo_pos_merchant_app/lib/src/screens/industry_onboarding_wizard_screen.dart).
+## 6. Live Interactive Switching & Dual Mode Support
+
+BharatHisab provides seamless switching across all 5 industry verticals both at onboarding and dynamically during active billing:
+
+### A. Visual Setup Onboarding Cards
+During merchant sign up in [`MerchantAuthScreen`](../../apps/ezo_pos_merchant_app/lib/src/screens/merchant_auth_screen.dart), merchants are presented with an interactive 5-Vertical Grid containing dedicated color badges, icons, and capability highlights. Toggling off "Clean Slate" automatically pre-seeds the store with the industry-specific catalog and default categories.
+
+### B. Header Mode Switcher Dropdown
+In [`PosBillingScreen`](../../apps/ezo_pos_merchant_app/lib/src/screens/pos_billing_screen.dart), merchants can switch verticals at any time via the quick-switch button in the top app bar (`[ 🛒 Kirana & Grocery ▾ ]`). The switcher offers two options:
+1. **Switch Mode & Load Sample Items**: Clears cart and populates the counter with the target vertical's pre-seeded catalog.
+2. **Switch Mode (Keep Current Items)**: Keeps existing cart and catalog while dynamically updating the action bar, theme accents, and receipt layouts.
+
+### C. Vertical-Specific Dynamic Action Bars & Micro-Interactions
+- **🛒 Kirana**: Live digital scale sync button (`⚖️ Read Scale`), Bag Charge toggle (`🛍️ Bag Charge`), Quick staples numpad.
+- **🍽️ Restaurant**: Table Selector pills (`T-01` to `T-12`, `Takeaway`), `🍳 Send / Print KOT` instant kitchen dispatch slip modal.
+- **💊 Pharmacy**: Prescribing Doctor & Patient modal (`🩺 Rx Doctor`), Schedule H narcotic compliance warnings, Batch & Expiry date indicators.
+- **👕 Garments**: Size matrix chips (`XS`, `S`, `M`, `L`, `XL`, `XXL`), Color chips (`Black`, `Navy`, `Olive`, etc.), `🏷️ Print Barcode Tag (38x25mm)` sticker dialog.
+- **📱 Electronics**: 15-digit IMEI / Serial number validation prompt (`📱 Add IMEI / Serial`), Printed 1-Year Warranty Certificate banner.
+
+---
+
+To run or test the onboarding wizard, open [`apps/ezo_pos_merchant_app/lib/src/screens/industry_onboarding_wizard_screen.dart`](../../apps/ezo_pos_merchant_app/lib/src/screens/industry_onboarding_wizard_screen.dart) or switch directly within the main billing counter.

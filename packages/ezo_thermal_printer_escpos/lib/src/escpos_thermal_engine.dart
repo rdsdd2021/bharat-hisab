@@ -351,6 +351,25 @@ class EscPosThermalEngine {
       center('');
     }
 
+    // Vertical-specific banners
+    switch (storeProfile.industryVertical) {
+      case IndustryVertical.restaurantCafe:
+        center('Order: Dine-In Service • GST 5%');
+        break;
+      case IndustryVertical.pharmacyHealth:
+        center('Drug Lic: 20B/21B-MH-4920');
+        center('*** Consult Doctor Before Medication ***');
+        break;
+      case IndustryVertical.garmentsApparel:
+        center('*** 7-DAY EXCHANGE WITH ORIGINAL TAG ***');
+        break;
+      case IndustryVertical.electronicsMobiles:
+        center('*** 1-YEAR WARRANTY CERTIFICATE INCLUDED ***');
+        break;
+      case IndustryVertical.kiranaGrocery:
+        break;
+    }
+
     center(storeProfile.branding.receiptFooterTagline);
     return buffer.toString();
   }

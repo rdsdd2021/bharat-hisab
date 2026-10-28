@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.2.0] - 2026-10-28
+
+### 🚀 Added
+- **5-Vertical Interactive Setup Selector Cards (`MerchantAuthScreen`)**:
+  - Replaced plain setup selector with 5 visual cards showing industry badges, icons, color codes, and capability bullets for Kirana, Restaurant, Pharmacy, Garments, and Electronics.
+  - Linked "Seed Demo Catalog" toggle to initialize vertical-specific demo inventory on registration.
+- **Dynamic Billing Counter Mode Switcher (`PosBillingScreen`)**:
+  - Embedded `[ 🛒 Kirana & Grocery ▾ ]` quick-switch pill directly in POS top app bar.
+  - Interactive bottom sheet allowing cashiers to switch verticals on the fly with two choices:
+    - *Switch Mode & Load Sample Items*: Instantly switches counter and loads sample inventory.
+    - *Switch Mode (Keep Current Items)*: Retains current cart items while altering mode-specific actions.
+- **Vertical-Specific Micro-Interaction Toolbars**:
+  - **🍽️ Restaurant, Cafe & QSR**: Table and takeaway selection bar (`T-01` to `T-12`, `Takeaway`), Room Service tags, and instant `[ 🍳 Send / Print KOT ]` kitchen order ticket modal preview.
+  - **💊 Pharmacy & Healthcare**: Prescribing Doctor & Patient info prompt (`🩺 Rx Doctor`), Schedule H drug compliance warning badge, and Near-Expiry indicator chip.
+  - **👕 Garments & Apparel**: Garment size matrix chips (`XS`, `S`, `M`, `L`, `XL`, `XXL`), Color variant selector chips (`Black`, `Navy`, `Olive`, `White`, `Red`, `Beige`), and `[ 🏷️ Print Barcode Tag (38x25mm) ]` sticker preview modal.
+  - **📱 Electronics & Mobiles**: 15-digit IMEI & Serial Number modal prompt (`📱 Add IMEI / Serial`) and 1-Year brand warranty certificate banner on receipts.
+  - **🛒 Kirana & Supermarket**: Digital scale tare/read button (`⚖️ Read Scale`) and Bag Charge toggle (`🛍️ Bag Charge`).
+- **Vertical-Specific Thermal Receipt Printing**:
+  - Tailored receipts dynamically featuring order type/table number (Restaurant), Drug License & Batch/Expiry details (Pharmacy), 7-day apparel exchange policy (Garments), and Serial/IMEI warranty certification (Electronics).
+- **Automated Mode Switching Test Suite**:
+  - Added `vertical_mode_switching_test.dart` verifying all 5 modes, dynamic action bars, sample catalog loading, and KOT dispatch.
+  - Maintained 100% green test suite across 62 tests in 10 test files.
+
+---
+
 ## [1.1.0] - 2026-10-28
 
 ### 🚀 Added

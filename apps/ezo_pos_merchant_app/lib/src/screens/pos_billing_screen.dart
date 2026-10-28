@@ -167,6 +167,10 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
+                    // Industry Vertical Mode Switcher Pill
+                    _buildVerticalSwitcherPill(context, c),
+                    const SizedBox(width: 8),
+
                     // Mode Toggle Pill
                     InkWell(
                       onTap: () => c.setGstMode(!c.isGstInvoice),
@@ -437,6 +441,9 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
             ],
           ),
         ),
+
+        // Dynamic Industry Vertical Action Bar
+        _buildVerticalSpecificActionBar(context, c),
 
         // Horizontal Category Pills
         Container(
@@ -1219,6 +1226,28 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
+
+                // Vertical KOT Dispatch (Restaurant Mode)
+                if (c.currentProfile.industryVertical == IndustryVertical.restaurantCafe) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleSendKot(context, c),
+                      icon: const Icon(LucideIcons.utensilsCrossed, size: 14),
+                      label: Text(
+                        '🍳 Send / Print KOT (${c.selectedTable})',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEA580C),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
 
                 // 4 Action Buttons: Hold Sale, UPI QR, Print Bill (F12), Udhaar
                 Row(
@@ -3632,5 +3661,834 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         ),
       ),
     );
+  }
+
+  // =========================================================================
+  // INDUSTRY VERTICAL DYNAMIC MODES & ACTION BARS
+  // =========================================================================
+
+  Widget _buildVerticalSwitcherPill(BuildContext context, PosBillingController c) {
+    final vColor = _getVerticalColor(c.currentProfile.industryVertical);
+    final vIcon = _getVerticalIcon(c.currentProfile.industryVertical);
+    final vTitle = _getVerticalTitle(c.currentProfile.industryVertical);
+
+    return InkWell(
+      onTap: () => _showVerticalSwitcherModal(context, c),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: vColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: vColor, width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(vIcon, size: 14, color: vColor),
+            const SizedBox(width: 6),
+            Text(
+              vTitle,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: vColor,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(LucideIcons.chevronDown, size: 13, color: vColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerticalSpecificActionBar(BuildContext context, PosBillingController c) {
+    switch (c.currentProfile.industryVertical) {
+      case IndustryVertical.restaurantCafe:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF7ED),
+            border: Border(bottom: BorderSide(color: const Color(0xFFFDBA74).withValues(alpha: 0.5), width: 1)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.utensilsCrossed, size: 15, color: Color(0xFFEA580C)),
+                const SizedBox(width: 8),
+                Text(
+                  'Table / Room:',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF9A3412)),
+                ),
+                const SizedBox(width: 10),
+                Row(
+                  children: ['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Takeaway', 'Delivery', 'Room 101', 'Room 102'].map((tbl) {
+                    final isSelected = c.selectedTable == tbl;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(tbl),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFEA580C),
+                        backgroundColor: Colors.white,
+                        labelStyle: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected ? Colors.white : const Color(0xFF431407),
+                        ),
+                        onSelected: (_) => c.setSelectedTable(tbl),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case IndustryVertical.pharmacyHealth:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFFECFDF5),
+            border: Border(bottom: BorderSide(color: Color(0xFFA7F3D0), width: 1)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.pill, size: 15, color: Color(0xFF059669)),
+                const SizedBox(width: 8),
+                Text(
+                  'Rx Pharma Mode:',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF065F46)),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => _showDoctorPatientDialog(context, c),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFA7F3D0))),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.stethoscope, size: 13, color: Color(0xFF059669)),
+                        const SizedBox(width: 4),
+                        Text(
+                          c.patientDoctorNote != null && c.patientDoctorNote!.isNotEmpty ? c.patientDoctorNote! : '+ Patient / Doctor Note',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w600, color: const Color(0xFF065F46)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: const Color(0xFFD1FAE5), borderRadius: BorderRadius.circular(6)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.shieldCheck, size: 13, color: Color(0xFF059669)),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Batch & 90-Day Expiry Guard Active',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF047857)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case IndustryVertical.garmentsApparel:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFAF5FF),
+            border: Border(bottom: BorderSide(color: Color(0xFFE9D5FF), width: 1)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.shirt, size: 15, color: Color(0xFF7C3AED)),
+                const SizedBox(width: 8),
+                Text(
+                  'Size:',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF581C87)),
+                ),
+                const SizedBox(width: 6),
+                ...['S', 'M', 'L', 'XL', 'XXL'].map((sz) {
+                  final isSelected = c.selectedSize == sz;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: InkWell(
+                      onTap: () => c.setGarmentAttributes(size: sz),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFD8B4FE)),
+                        ),
+                        child: Text(
+                          sz,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected ? Colors.white : const Color(0xFF581C87),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(width: 10),
+                Text(
+                  'Color:',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF581C87)),
+                ),
+                const SizedBox(width: 6),
+                ...['Std', 'Red', 'Blue', 'Black'].map((clr) {
+                  final isSelected = c.selectedColor == clr;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: InkWell(
+                      onTap: () => c.setGarmentAttributes(color: clr),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFFD8B4FE)),
+                        ),
+                        child: Text(
+                          clr,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected ? Colors.white : const Color(0xFF581C87),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _showBarcodeStickerPrintModal(context, c),
+                  icon: const Icon(LucideIcons.tag, size: 13),
+                  label: const Text('38x25mm Tag'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    textStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case IndustryVertical.electronicsMobiles:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF0F9FF),
+            border: Border(bottom: BorderSide(color: Color(0xFFBAE6FD), width: 1)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.smartphone, size: 15, color: Color(0xFF0284C7)),
+                const SizedBox(width: 8),
+                Text(
+                  'Serial / 15-Digit IMEI:',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF0369A1)),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => _showImeiPromptDialog(context, c),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFF7DD3FC))),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.scanBarcode, size: 13, color: Color(0xFF0284C7)),
+                        const SizedBox(width: 4),
+                        Text(
+                          c.scannedImei != null && c.scannedImei!.isNotEmpty ? c.scannedImei! : '+ Input Device IMEI / Serial',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w600, color: const Color(0xFF0369A1)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(6)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.award, size: 13, color: Color(0xFF0284C7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '1-Yr Warranty Cert Auto-Printed',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0369A1)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case IndustryVertical.kiranaGrocery:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFFEFF6FF),
+            border: Border(bottom: BorderSide(color: Color(0xFFBFDBFE), width: 1)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.scale, size: 15, color: Color(0xFF1E88E5)),
+                const SizedBox(width: 8),
+                Text(
+                  'Weighing Scale Ready:',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF93C5FD))),
+                  child: Text(
+                    '1.000 KG (Live RS-232 / USB)',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Units: KG | GMS | LTR | BAG',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF3B82F6)),
+                ),
+                const SizedBox(width: 14),
+                InkWell(
+                  onTap: () => _showKiranaNumpadModal(context, c),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFDBEAFE), borderRadius: BorderRadius.circular(4)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.calculator, size: 13, color: Color(0xFF1E40AF)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Kirana Numpad (F4)',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+    }
+  }
+
+  void _showVerticalSwitcherModal(BuildContext context, PosBillingController c) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final verticals = IndustryVerticalInfo.getAllVerticals();
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: EzoColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '🏪 Switch Industry Vertical Mode',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w800, color: EzoColors.textPrimary),
+                      ),
+                      Text(
+                        'Select a specialized retail operating mode for your counter',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 12, color: EzoColors.textMuted),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: verticals.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, idx) {
+                    final vInfo = verticals[idx];
+                    final isCurrent = c.currentProfile.industryVertical == vInfo.vertical;
+                    final vColor = _getVerticalColor(vInfo.vertical);
+                    final vIcon = _getVerticalIcon(vInfo.vertical);
+
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _confirmSwitchVertical(context, c, vInfo);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isCurrent ? vColor.withValues(alpha: 0.08) : EzoColors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isCurrent ? vColor : EzoColors.border,
+                            width: isCurrent ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isCurrent ? vColor : vColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(vIcon, color: isCurrent ? Colors.white : vColor, size: 20),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        vInfo.title,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: isCurrent ? vColor : EzoColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: vColor.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          vInfo.categoryBadge,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: vColor,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isCurrent) ...[
+                                        const Spacer(),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: vColor,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            'ACTIVE',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    vInfo.subtitle,
+                                    style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: EzoColors.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmSwitchVertical(BuildContext context, PosBillingController c, IndustryVerticalInfo vInfo) {
+    if (c.currentProfile.industryVertical == vInfo.vertical) return;
+
+    final vColor = _getVerticalColor(vInfo.vertical);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(_getVerticalIcon(vInfo.vertical), color: vColor, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Switch to ${vInfo.title}',
+                style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Would you like to load pre-seeded sample products & categories for this vertical, or keep your existing catalog items?',
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await c.switchIndustryVertical(vInfo.vertical, loadSampleData: false);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Switched to ${vInfo.title} (Catalog kept)'),
+                    backgroundColor: vColor,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              'Keep Existing Items',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: EzoColors.textSecondary),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await c.switchIndustryVertical(vInfo.vertical, loadSampleData: true);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('⚡ Switched to ${vInfo.title} and loaded sample catalog!'),
+                    backgroundColor: vColor,
+                  ),
+                );
+              }
+            },
+            icon: const Icon(LucideIcons.sparkles, size: 15),
+            label: const Text('Load Sample Catalog'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: vColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleSendKot(BuildContext context, PosBillingController c) {
+    if (c.cartLines.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cart is empty. Add food items before sending KOT.'), backgroundColor: EzoColors.warning),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🍳 Kitchen Order Ticket (KOT) sent for ${c.selectedTable}! (${c.cartLines.length} items)'),
+        backgroundColor: const Color(0xFFEA580C),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    _showKotPreviewDialog(context, c);
+  }
+
+  void _showKotPreviewDialog(BuildContext context, PosBillingController c) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.utensilsCrossed, color: Color(0xFFEA580C), size: 22),
+            const SizedBox(width: 8),
+            Text('Kitchen Order Ticket (KOT)', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Table: ${c.selectedTable}', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: const Color(0xFF9A3412))),
+                    Text('Order #${DateTime.now().minute}${DateTime.now().second}', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: const Color(0xFFC2410C))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              ...c.cartLines.map((line) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Text('${line.quantity.toInt()}x', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: const Color(0xFFEA580C))),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(line.itemName, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600))),
+                  ],
+                ),
+              )),
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Text(
+                'Server: ${c.currentStaff?.fullName ?? "Counter 1"} • Time: ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, "0")}',
+                style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('🖨️ KOT slip dispatched to kitchen thermal printer!'), backgroundColor: Color(0xFFEA580C)),
+              );
+            },
+            icon: const Icon(LucideIcons.printer, size: 14),
+            label: const Text('Print Kitchen Slip'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA580C), foregroundColor: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDoctorPatientDialog(BuildContext context, PosBillingController c) {
+    final noteCtrl = TextEditingController(text: c.patientDoctorNote ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.stethoscope, color: Color(0xFF059669), size: 20),
+            const SizedBox(width: 8),
+            Text('Doctor / Patient Prescription', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: TextField(
+          controller: noteCtrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Patient Name & Prescribing Doctor',
+            hintText: 'e.g. Ramesh Patil / Dr. Kulkarni (Reg 4920)',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              c.setPatientDoctorNote(noteCtrl.text.trim());
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+            child: const Text('Save Note'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImeiPromptDialog(BuildContext context, PosBillingController c) {
+    final imeiCtrl = TextEditingController(text: c.scannedImei ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.smartphone, color: Color(0xFF0284C7), size: 20),
+            const SizedBox(width: 8),
+            Text('Device IMEI / Serial Number', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: TextField(
+          controller: imeiCtrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: '15-Digit IMEI or Hardware Serial No',
+            hintText: 'e.g. 864209048291048',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              c.setScannedImei(imeiCtrl.text.trim());
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white),
+            child: const Text('Assign IMEI'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBarcodeStickerPrintModal(BuildContext context, PosBillingController c) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.tag, color: Color(0xFF7C3AED), size: 20),
+            const SizedBox(width: 8),
+            Text('38x25mm Garment Barcode Sticker', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Container(
+          width: 280,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.black26),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(c.currentProfile.storeName, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13)),
+              const SizedBox(height: 4),
+              Text('Size: ${c.selectedSize} | Color: ${c.selectedColor}', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Container(
+                height: 36,
+                color: Colors.black12,
+                child: Center(
+                  child: Text('||| | |||| | |||||| || |', style: GoogleFonts.jetBrainsMono(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text('TAG-GARMENT-2026', style: GoogleFonts.jetBrainsMono(fontSize: 11)),
+              const SizedBox(height: 6),
+              Text('MRP: ₹1,299 | Offer: ₹899', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: const Color(0xFF7C3AED), fontSize: 12)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('🏷️ Sent 30 copies of 38x25mm sticker to thermal label printer!'), backgroundColor: Color(0xFF7C3AED)),
+              );
+            },
+            icon: const Icon(LucideIcons.printer, size: 14),
+            label: const Text('Print Sticker Roll'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C3AED), foregroundColor: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getVerticalColor(IndustryVertical v) {
+    switch (v) {
+      case IndustryVertical.restaurantCafe:
+        return const Color(0xFFEA580C);
+      case IndustryVertical.pharmacyHealth:
+        return const Color(0xFF059669);
+      case IndustryVertical.garmentsApparel:
+        return const Color(0xFF7C3AED);
+      case IndustryVertical.electronicsMobiles:
+        return const Color(0xFF0284C7);
+      case IndustryVertical.kiranaGrocery:
+        return const Color(0xFF1E88E5);
+    }
+  }
+
+  IconData _getVerticalIcon(IndustryVertical v) {
+    switch (v) {
+      case IndustryVertical.restaurantCafe:
+        return LucideIcons.utensilsCrossed;
+      case IndustryVertical.pharmacyHealth:
+        return LucideIcons.pill;
+      case IndustryVertical.garmentsApparel:
+        return LucideIcons.shirt;
+      case IndustryVertical.electronicsMobiles:
+        return LucideIcons.smartphone;
+      case IndustryVertical.kiranaGrocery:
+        return LucideIcons.shoppingCart;
+    }
+  }
+
+  String _getVerticalTitle(IndustryVertical v) {
+    switch (v) {
+      case IndustryVertical.restaurantCafe:
+        return 'Restaurant / Cafe';
+      case IndustryVertical.pharmacyHealth:
+        return 'Pharmacy & Health';
+      case IndustryVertical.garmentsApparel:
+        return 'Garments & Apparel';
+      case IndustryVertical.electronicsMobiles:
+        return 'Electronics & Mobile';
+      case IndustryVertical.kiranaGrocery:
+        return 'Kirana & Grocery';
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'white_label_branding.dart';
+import 'industry_vertical.dart';
 
 enum PrintFormat {
   chota58mm,
@@ -41,6 +42,7 @@ class BusinessProfile {
   final bool isGstEnabled;
   final PrintFormat defaultPrintFormat;
   final RegionalLanguage activeLanguageCode;
+  final IndustryVertical industryVertical;
   final WhiteLabelBranding branding;
 
   const BusinessProfile({
@@ -63,6 +65,7 @@ class BusinessProfile {
     this.isGstEnabled = true,
     this.defaultPrintFormat = PrintFormat.chota58mm,
     this.activeLanguageCode = RegionalLanguage.en,
+    this.industryVertical = IndustryVertical.kiranaGrocery,
     this.branding = const WhiteLabelBranding(),
   });
 
@@ -88,6 +91,7 @@ class BusinessProfile {
     bool? isGstEnabled,
     PrintFormat? defaultPrintFormat,
     RegionalLanguage? activeLanguageCode,
+    IndustryVertical? industryVertical,
     WhiteLabelBranding? branding,
   }) {
     return BusinessProfile(
@@ -110,6 +114,7 @@ class BusinessProfile {
       isGstEnabled: isGstEnabled ?? this.isGstEnabled,
       defaultPrintFormat: defaultPrintFormat ?? this.defaultPrintFormat,
       activeLanguageCode: activeLanguageCode ?? this.activeLanguageCode,
+      industryVertical: industryVertical ?? this.industryVertical,
       branding: branding ?? this.branding,
     );
   }
@@ -135,6 +140,7 @@ class BusinessProfile {
       'isGstEnabled': isGstEnabled,
       'defaultPrintFormat': defaultPrintFormat.name,
       'activeLanguageCode': activeLanguageCode.name,
+      'industryVertical': industryVertical.name,
       'branding': branding.toJson(),
     };
   }
@@ -165,6 +171,10 @@ class BusinessProfile {
       activeLanguageCode: RegionalLanguage.values.firstWhere(
         (e) => e.name == json['activeLanguageCode'],
         orElse: () => RegionalLanguage.en,
+      ),
+      industryVertical: IndustryVertical.values.firstWhere(
+        (e) => e.name == json['industryVertical'],
+        orElse: () => IndustryVertical.kiranaGrocery,
       ),
       branding: json['branding'] != null
           ? WhiteLabelBranding.fromJson(json['branding'] as Map<String, dynamic>)

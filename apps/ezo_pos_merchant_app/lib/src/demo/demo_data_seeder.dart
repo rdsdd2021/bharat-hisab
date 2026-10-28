@@ -81,6 +81,7 @@ class DemoDataSeeder {
       isGstEnabled: activeGstin.trim().length == 15,
       defaultPrintFormat: activeFormat,
       activeLanguageCode: activeLang,
+      industryVertical: vertical,
       branding: WhiteLabelBranding(
         brandAppName: 'Bharat Hisab',
         resellerCompanyName: 'Bharat Hisab Technologies',

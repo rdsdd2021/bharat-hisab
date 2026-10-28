@@ -124,9 +124,22 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
     BusinessProfile profile;
     StaffMember staff;
 
+    final verticalColorHex = _selectedVertical == IndustryVertical.restaurantCafe
+        ? '#EA580C'
+        : (_selectedVertical == IndustryVertical.pharmacyHealth
+            ? '#059669'
+            : (_selectedVertical == IndustryVertical.garmentsApparel
+                ? '#7C3AED'
+                : (_selectedVertical == IndustryVertical.electronicsMobiles ? '#0284C7' : '#1E88E5')));
+
     if (cloudResult.success && cloudResult.profile != null && cloudResult.staff != null) {
-      profile = cloudResult.profile!;
+      profile = cloudResult.profile!.copyWith(
+        industryVertical: _selectedVertical,
+        branding: cloudResult.profile!.branding.copyWith(primaryColorHex: verticalColorHex),
+      );
       staff = cloudResult.staff!;
+      await widget.repository.saveProfile(profile);
+      await widget.repository.saveStaff(staff);
     } else {
       // 2. Offline Fallback: Local Creation
       final profileId = 'store_${DateTime.now().millisecondsSinceEpoch}';
@@ -149,13 +162,16 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
         defaultPrintFormat: _selectedVertical == IndustryVertical.restaurantCafe
             ? PrintFormat.bada80mm
             : PrintFormat.chota58mm,
+        industryVertical: _selectedVertical,
         branding: WhiteLabelBranding(
           brandAppName: 'BharatHisab',
           resellerCompanyName: 'Bharat Commercial Tech Ltd',
           supportWhatsApp: phone,
-          primaryColorHex: '#4338CA',
+          primaryColorHex: verticalColorHex,
           accentColorHex: '#4F46E5',
-          receiptFooterTagline: 'Thank you for shopping with us! Visit again.',
+          receiptFooterTagline: _selectedVertical == IndustryVertical.restaurantCafe
+              ? 'Thank you for dining with us! Visit again soon!'
+              : 'Thank you for shopping with us! Visit again.',
         ),
       );
 
@@ -200,6 +216,12 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
         storeName: storeName,
         phone: phone,
       );
+      if (widget.repository.getAllProfiles().isNotEmpty) {
+        profile = widget.repository.getAllProfiles().first;
+      }
+      if (widget.repository.getAllStaff().isNotEmpty) {
+        staff = widget.repository.getAllStaff().first;
+      }
     }
 
     widget.onAuthenticated(profile, staff);
@@ -473,62 +495,8 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
         ),
         const SizedBox(height: 12),
 
-        // Industry Vertical Selector
-        Text(
-          'Industry Vertical / Store Type *',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<IndustryVertical>(
-              value: _selectedVertical,
-              isExpanded: true,
-              icon: const Icon(LucideIcons.chevronDown, size: 14),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12.5,
-                color: const Color(0xFF0F172A),
-                fontWeight: FontWeight.w600,
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: IndustryVertical.kiranaGrocery,
-                  child: Text('🛒 Kirana, Supermarket & Grocery (Weighing Scale + FMCG)'),
-                ),
-                DropdownMenuItem(
-                  value: IndustryVertical.restaurantCafe,
-                  child: Text('🍽️ Restaurant, Cafe & QSR (Table Orders & Kitchen KOT)'),
-                ),
-                DropdownMenuItem(
-                  value: IndustryVertical.pharmacyHealth,
-                  child: Text('💊 Pharmacy & Healthcare (Batch Numbers & Expiry Dates)'),
-                ),
-                DropdownMenuItem(
-                  value: IndustryVertical.garmentsApparel,
-                  child: Text('👕 Garments & Apparel (Size/Color Matrix + Barcode Tags)'),
-                ),
-                DropdownMenuItem(
-                  value: IndustryVertical.electronicsMobiles,
-                  child: Text('📱 Electronics & Mobiles (Serial/IMEI & Warranty Tracking)'),
-                ),
-              ],
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedVertical = val);
-              },
-            ),
-          ),
-        ),
+        // Visual 5-Vertical Card Selector
+        _buildVerticalCardsSelector(),
         const SizedBox(height: 14),
 
         // Clean Slate vs Pre-loaded Sample Items Option
@@ -723,6 +691,209 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalCardsSelector() {
+    final verticalsData = [
+      (
+        vertical: IndustryVertical.kiranaGrocery,
+        title: 'Kirana, Supermarket & Grocery',
+        badge: 'Retail FMCG',
+        icon: LucideIcons.shoppingCart,
+        color: const Color(0xFF1E88E5),
+        desc: 'Loose item weighing scale integration (KG/GMS), multi-pack barcodes & quick numpad',
+      ),
+      (
+        vertical: IndustryVertical.restaurantCafe,
+        title: 'Restaurant, Cafe & QSR',
+        badge: 'Hospitality',
+        icon: LucideIcons.utensilsCrossed,
+        color: const Color(0xFFEA580C),
+        desc: 'Table & room orders, instant KOT kitchen dispatch, 5% composite GST',
+      ),
+      (
+        vertical: IndustryVertical.pharmacyHealth,
+        title: 'Pharmacy & Healthcare',
+        badge: 'Healthcare',
+        icon: LucideIcons.pill,
+        color: const Color(0xFF059669),
+        desc: 'Mandatory Batch Number, Expiry Date tracking, 30/60/90-day expiry alerts',
+      ),
+      (
+        vertical: IndustryVertical.garmentsApparel,
+        title: 'Garments & Apparel',
+        badge: 'Fashion & Retail',
+        icon: LucideIcons.shirt,
+        color: const Color(0xFF7C3AED),
+        desc: 'Size & Color matrix, 38mm x 25mm barcode tag printing, tiered clothing GST',
+      ),
+      (
+        vertical: IndustryVertical.electronicsMobiles,
+        title: 'Electronics & Mobiles',
+        badge: 'Consumer Tech',
+        icon: LucideIcons.smartphone,
+        color: const Color(0xFF0284C7),
+        desc: '15-digit IMEI & Serial Number tracking, printed warranty certification',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            Text(
+              'Select Industry Vertical Module *',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '5 Pre-Seeded Modules',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF4338CA),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...verticalsData.map((item) {
+          final isSelected = _selectedVertical == item.vertical;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  _selectedVertical = item.vertical;
+                  if (_storeNameCtrl.text.isEmpty ||
+                      _storeNameCtrl.text == 'My Super Store' ||
+                      _storeNameCtrl.text.startsWith('Bharat Super') ||
+                      _storeNameCtrl.text.startsWith('The Spice') ||
+                      _storeNameCtrl.text.startsWith('Sanjivani') ||
+                      _storeNameCtrl.text.startsWith('FabStyle') ||
+                      _storeNameCtrl.text.startsWith('TechZone')) {
+                    switch (item.vertical) {
+                      case IndustryVertical.restaurantCafe:
+                        _storeNameCtrl.text = 'The Spice Bistro & Cafe';
+                        break;
+                      case IndustryVertical.pharmacyHealth:
+                        _storeNameCtrl.text = 'Sanjivani Medicos & Wellness';
+                        break;
+                      case IndustryVertical.garmentsApparel:
+                        _storeNameCtrl.text = 'FabStyle Boutique & Garments';
+                        break;
+                      case IndustryVertical.electronicsMobiles:
+                        _storeNameCtrl.text = 'TechZone Mobiles & Electronics';
+                        break;
+                      case IndustryVertical.kiranaGrocery:
+                        _storeNameCtrl.text = 'Bharat Super Kirana & Mart';
+                        break;
+                    }
+                  }
+                });
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isSelected ? item.color.withValues(alpha: 0.08) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? item.color : const Color(0xFFCBD5E1),
+                    width: isSelected ? 1.8 : 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? item.color : item.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        item.icon,
+                        size: 18,
+                        color: isSelected ? Colors.white : item.color,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                item.title,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                                  color: isSelected ? item.color : const Color(0xFF0F172A),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: item.color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  item.badge,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: item.color,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.desc,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: const Color(0xFF475569),
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      isSelected ? LucideIcons.circleCheck : LucideIcons.circle,
+                      size: 16,
+                      color: isSelected ? item.color : const Color(0xFF94A3B8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
       ],
     );
   }

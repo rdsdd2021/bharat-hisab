@@ -2,12 +2,18 @@ import 'package:flutter/foundation.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_gst_tax_engine/ezo_gst_tax_engine.dart';
 import 'package:ezo_inventory_barcode/ezo_inventory_barcode.dart';
+import '../demo/demo_data_seeder.dart';
 
 class PosBillingController extends ChangeNotifier {
   final EzoOfflineRepository repository;
 
   // Active Store Profile & Staff
-  final BusinessProfile _currentProfile;
+  BusinessProfile _currentProfile;
+  String _selectedTable = 'Table 1';
+  String? _patientDoctorNote;
+  String _selectedSize = 'M';
+  String _selectedColor = 'Standard';
+  String? _scannedImei;
   final StaffMember? _currentStaff;
 
   // Invoice Mode Settings
@@ -400,6 +406,74 @@ class PosBillingController extends ChangeNotifier {
 
   /// Reloads the catalog from repository storage
   void reloadCatalog() {
+    notifyListeners();
+  }
+
+  // Mode-Specific Getters & Setters
+  String get selectedTable => _selectedTable;
+  String? get patientDoctorNote => _patientDoctorNote;
+  String get selectedSize => _selectedSize;
+  String get selectedColor => _selectedColor;
+  String? get scannedImei => _scannedImei;
+
+  void setSelectedTable(String table) {
+    _selectedTable = table;
+    _customFields = _customFields.copyWith(tableNumber: table);
+    notifyListeners();
+  }
+
+  void setPatientDoctorNote(String note) {
+    _patientDoctorNote = note;
+    _customFields = _customFields.copyWith(poNumber: note);
+    notifyListeners();
+  }
+
+  void setGarmentAttributes({String? size, String? color}) {
+    if (size != null) _selectedSize = size;
+    if (color != null) _selectedColor = color;
+    notifyListeners();
+  }
+
+  void setScannedImei(String imei) {
+    _scannedImei = imei;
+    _customFields = _customFields.copyWith(ticketOrImeiNumber: imei);
+    notifyListeners();
+  }
+
+  Future<void> switchIndustryVertical(IndustryVertical newVertical, {bool loadSampleData = false}) async {
+    final updatedProfile = _currentProfile.copyWith(
+      industryVertical: newVertical,
+      defaultPrintFormat: newVertical == IndustryVertical.restaurantCafe
+          ? PrintFormat.bada80mm
+          : PrintFormat.chota58mm,
+      branding: _currentProfile.branding.copyWith(
+        primaryColorHex: newVertical == IndustryVertical.restaurantCafe
+            ? '#EA580C'
+            : (newVertical == IndustryVertical.pharmacyHealth
+                ? '#059669'
+                : (newVertical == IndustryVertical.garmentsApparel
+                    ? '#7C3AED'
+                    : (newVertical == IndustryVertical.electronicsMobiles ? '#0284C7' : '#1E88E5'))),
+      ),
+    );
+    _currentProfile = updatedProfile;
+    await repository.saveProfile(updatedProfile);
+
+    if (loadSampleData) {
+      await DemoDataSeeder.seedVerticalStore(
+        repo: repository,
+        vertical: newVertical,
+        storeName: _currentProfile.storeName,
+        phone: _currentProfile.phone,
+      );
+    }
+
+    _selectedCategory = 'All';
+    _searchQuery = '';
+    _cartLines.clear();
+    _customFields = InvoiceCustomFields(
+      tableNumber: newVertical == IndustryVertical.restaurantCafe ? _selectedTable : '',
+    );
     notifyListeners();
   }
 }

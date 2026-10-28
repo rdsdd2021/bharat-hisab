@@ -460,7 +460,8 @@ void main() {
       expect(find.text('Held (1)'), findsOneWidget);
 
       // Tap badge to open queue modal
-      await tester.tap(find.text('Held (1)'));
+      await tester.ensureVisible(find.text('Held (1)'));
+      await tester.tap(find.text('Held (1)'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.text('Parked / Held Bills Queue (1)'), findsOneWidget);
