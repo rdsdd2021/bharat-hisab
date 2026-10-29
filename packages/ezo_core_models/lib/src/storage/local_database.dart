@@ -22,15 +22,26 @@ class LocalDatabase {
   MerchantLicenseKey? _activeLicense;
   final List<SyncQueueEntry> _syncQueue = [];
 
-  LocalDatabase({this.storageDirectory});
+  LocalDatabase({
+    this.storageDirectory,
+    this.initialJsonData,
+    this.onPersist,
+  });
+
+  final String? initialJsonData;
+  final Future<void> Function(String json)? onPersist;
 
   Future<void> initialize() async {
-    if (storageDirectory != null) {
-      final dir = Directory(storageDirectory!);
-      if (!dir.existsSync()) {
-        dir.createSync(recursive: true);
-      }
-      _loadFromDisk();
+    if (initialJsonData != null && initialJsonData!.trim().isNotEmpty) {
+      _loadFromJson(initialJsonData!);
+    } else if (storageDirectory != null) {
+      try {
+        final dir = Directory(storageDirectory!);
+        if (!dir.existsSync()) {
+          dir.createSync(recursive: true);
+        }
+        _loadFromDisk();
+      } catch (_) {}
     }
   }
 
@@ -40,40 +51,48 @@ class LocalDatabase {
       final file = File('$storageDirectory/ezo_local_db.json');
       if (file.existsSync()) {
         final content = file.readAsStringSync();
-        final data = jsonDecode(content) as Map<String, dynamic>;
+        _loadFromJson(content);
+      }
+    } catch (_) {
+      // Graceful fallback to fresh in-memory state on parse error
+    }
+  }
 
-        if (data['businessProfiles'] != null) {
-          final map = data['businessProfiles'] as Map<String, dynamic>;
-          map.forEach((k, v) => _businessProfiles[k] = BusinessProfile.fromJson(v as Map<String, dynamic>));
-        }
-        if (data['products'] != null) {
-          final map = data['products'] as Map<String, dynamic>;
-          map.forEach((k, v) => _products[k] = ProductItem.fromJson(v as Map<String, dynamic>));
-        }
-        if (data['invoices'] != null) {
-          final map = data['invoices'] as Map<String, dynamic>;
-          map.forEach((k, v) => _invoices[k] = InvoiceDocument.fromJson(v as Map<String, dynamic>));
-        }
-        if (data['parties'] != null) {
-          final map = data['parties'] as Map<String, dynamic>;
-          map.forEach((k, v) => _parties[k] = PartyAccount.fromJson(v as Map<String, dynamic>));
-        }
-        if (data['khataEntries'] != null) {
-          final map = data['khataEntries'] as Map<String, dynamic>;
-          map.forEach((k, v) => _khataEntries[k] = KhataLedgerEntry.fromJson(v as Map<String, dynamic>));
-        }
-        if (data['staffMembers'] != null) {
-          final map = data['staffMembers'] as Map<String, dynamic>;
-          map.forEach((k, v) => _staffMembers[k] = StaffMember.fromJson(v as Map<String, dynamic>));
-        }
-        if (data['activeLicense'] != null) {
-          _activeLicense = MerchantLicenseKey.fromJson(data['activeLicense'] as Map<String, dynamic>);
-        }
-        if (data['syncQueue'] != null) {
-          final list = data['syncQueue'] as List<dynamic>;
-          for (final item in list) {
-            _syncQueue.add(SyncQueueEntry.fromJson(item as Map<String, dynamic>));
-          }
+  void _loadFromJson(String content) {
+    try {
+      final data = jsonDecode(content) as Map<String, dynamic>;
+
+      if (data['businessProfiles'] != null) {
+        final map = data['businessProfiles'] as Map<String, dynamic>;
+        map.forEach((k, v) => _businessProfiles[k] = BusinessProfile.fromJson(v as Map<String, dynamic>));
+      }
+      if (data['products'] != null) {
+        final map = data['products'] as Map<String, dynamic>;
+        map.forEach((k, v) => _products[k] = ProductItem.fromJson(v as Map<String, dynamic>));
+      }
+      if (data['invoices'] != null) {
+        final map = data['invoices'] as Map<String, dynamic>;
+        map.forEach((k, v) => _invoices[k] = InvoiceDocument.fromJson(v as Map<String, dynamic>));
+      }
+      if (data['parties'] != null) {
+        final map = data['parties'] as Map<String, dynamic>;
+        map.forEach((k, v) => _parties[k] = PartyAccount.fromJson(v as Map<String, dynamic>));
+      }
+      if (data['khataEntries'] != null) {
+        final map = data['khataEntries'] as Map<String, dynamic>;
+        map.forEach((k, v) => _khataEntries[k] = KhataLedgerEntry.fromJson(v as Map<String, dynamic>));
+      }
+      if (data['staffMembers'] != null) {
+        final map = data['staffMembers'] as Map<String, dynamic>;
+        map.forEach((k, v) => _staffMembers[k] = StaffMember.fromJson(v as Map<String, dynamic>));
+      }
+      if (data['activeLicense'] != null) {
+        _activeLicense = MerchantLicenseKey.fromJson(data['activeLicense'] as Map<String, dynamic>);
+      }
+      if (data['syncQueue'] != null) {
+        final list = data['syncQueue'] as List<dynamic>;
+        for (final item in list) {
+          _syncQueue.add(SyncQueueEntry.fromJson(item as Map<String, dynamic>));
         }
       }
     } catch (_) {
@@ -82,21 +101,30 @@ class LocalDatabase {
   }
 
   Future<void> flushToDisk() async {
-    if (storageDirectory == null) return;
-    try {
-      final file = File('$storageDirectory/ezo_local_db.json');
-      final data = {
-        'businessProfiles': _businessProfiles.map((k, v) => MapEntry(k, v.toJson())),
-        'products': _products.map((k, v) => MapEntry(k, v.toJson())),
-        'invoices': _invoices.map((k, v) => MapEntry(k, v.toJson())),
-        'parties': _parties.map((k, v) => MapEntry(k, v.toJson())),
-        'khataEntries': _khataEntries.map((k, v) => MapEntry(k, v.toJson())),
-        'staffMembers': _staffMembers.map((k, v) => MapEntry(k, v.toJson())),
-        'activeLicense': _activeLicense?.toJson(),
-        'syncQueue': _syncQueue.map((e) => e.toJson()).toList(),
-      };
-      await file.writeAsString(jsonEncode(data), flush: true);
-    } catch (_) {}
+    final data = {
+      'businessProfiles': _businessProfiles.map((k, v) => MapEntry(k, v.toJson())),
+      'products': _products.map((k, v) => MapEntry(k, v.toJson())),
+      'invoices': _invoices.map((k, v) => MapEntry(k, v.toJson())),
+      'parties': _parties.map((k, v) => MapEntry(k, v.toJson())),
+      'khataEntries': _khataEntries.map((k, v) => MapEntry(k, v.toJson())),
+      'staffMembers': _staffMembers.map((k, v) => MapEntry(k, v.toJson())),
+      'activeLicense': _activeLicense?.toJson(),
+      'syncQueue': _syncQueue.map((e) => e.toJson()).toList(),
+    };
+    final jsonStr = jsonEncode(data);
+
+    if (onPersist != null) {
+      try {
+        await onPersist!(jsonStr);
+      } catch (_) {}
+    }
+
+    if (storageDirectory != null) {
+      try {
+        final file = File('$storageDirectory/ezo_local_db.json');
+        await file.writeAsString(jsonStr, flush: true);
+      } catch (_) {}
+    }
   }
 
   // --- Business Profile ---

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/ezo_theme.dart';
 import '../theme/google_fonts.dart';
+import '../services/hardware_permission_service.dart';
 
 class BarcodeScannerModal extends StatefulWidget {
   final ValueChanged<String> onBarcodeScanned;
@@ -52,6 +53,7 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
   @override
   void initState() {
     super.initState();
+    HardwarePermissionService.ensureCameraPermission();
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),

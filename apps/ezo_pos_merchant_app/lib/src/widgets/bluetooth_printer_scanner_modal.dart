@@ -4,6 +4,7 @@ import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 import '../theme/ezo_theme.dart';
 import '../theme/google_fonts.dart';
+import '../services/hardware_permission_service.dart';
 
 class BluetoothPrinterScannerModal extends StatefulWidget {
   final VoidCallback? onPrinterConnected;
@@ -36,6 +37,7 @@ class _BluetoothPrinterScannerModalState extends State<BluetoothPrinterScannerMo
   @override
   void initState() {
     super.initState();
+    HardwarePermissionService.ensureBluetoothPermission();
     _loadPairedPrinters();
   }
 

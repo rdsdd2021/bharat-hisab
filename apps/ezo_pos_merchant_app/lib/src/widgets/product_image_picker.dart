@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/ezo_theme.dart';
 import '../theme/google_fonts.dart';
+import '../services/hardware_permission_service.dart';
 
 class ProductImagePreset {
   final String label;
@@ -166,7 +167,8 @@ class ProductImagePicker extends StatelessWidget {
 
               // Action 1: Capture Photo via Device Camera
               InkWell(
-                onTap: () {
+                onTap: () async {
+                  await HardwarePermissionService.ensureCameraPermission();
                   // Simulate live camera snapshot capture
                   final simulatedSnap = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80';
                   onImageChanged(simulatedSnap);

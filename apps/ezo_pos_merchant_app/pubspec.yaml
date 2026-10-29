@@ -26,11 +26,17 @@ dependencies:
     path: ../../packages/ezo_l10n_vernacular
   lucide_icons_flutter: ^3.1.25
   http: ^1.2.0
+  shared_preferences: ^2.5.6
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+
+dependency_overrides:
+  shared_preferences_foundation: 2.4.0
+  path_provider_foundation: 2.4.0
 
 flutter:
   uses-material-design: true

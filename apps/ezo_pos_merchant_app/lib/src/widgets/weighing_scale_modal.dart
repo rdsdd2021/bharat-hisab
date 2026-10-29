@@ -6,6 +6,7 @@ import 'package:ezo_inventory_barcode/ezo_inventory_barcode.dart';
 import '../theme/ezo_theme.dart';
 import '../theme/google_fonts.dart';
 import '../services/android_weighing_scale_driver.dart';
+import '../services/hardware_permission_service.dart';
 
 class WeighingScaleModal extends StatefulWidget {
   final int? targetCartLineIndex;
@@ -65,6 +66,7 @@ class _WeighingScaleModalState extends State<WeighingScaleModal> with SingleTick
         setState(() => _reading = r);
       }
     });
+    HardwarePermissionService.ensureBluetoothPermission();
     _loadAvailableScales();
   }
 

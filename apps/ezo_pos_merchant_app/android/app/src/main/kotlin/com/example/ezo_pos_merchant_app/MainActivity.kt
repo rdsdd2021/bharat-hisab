@@ -1,5 +1,6 @@
 package com.example.ezo_pos_merchant_app
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
@@ -7,10 +8,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
 import androidx.annotation.NonNull
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -27,7 +31,11 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.bharathisab.pos/bluetooth_printer"
     private val SCALE_CHANNEL = "com.bharathisab.pos/weighing_scale"
     private val SCALE_STREAM_CHANNEL = "com.bharathisab.pos/weighing_scale_stream"
+    private val PERMISSION_CHANNEL = "com.bharathisab.pos/permissions"
+    private val PERMISSION_REQ_CODE = 2001
     private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+    private var pendingPermissionResult: MethodChannel.Result? = null
 
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
         BluetoothAdapter.getDefaultAdapter()
@@ -48,6 +56,35 @@ class MainActivity : FlutterActivity() {
     private var scaleOutputStream: OutputStream? = null
     private var isScaleReading = false
     private var scaleEventSink: EventChannel.EventSink? = null
+
+    private fun getRequiredPermissions(): Array<String> {
+        val list = mutableListOf<String>()
+        list.add(Manifest.permission.CAMERA)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            list.add(Manifest.permission.BLUETOOTH_SCAN)
+            list.add(Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            list.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+            list.add(Manifest.permission.BLUETOOTH)
+            list.add(Manifest.permission.BLUETOOTH_ADMIN)
+        }
+        return list.toTypedArray()
+    }
+
+    private fun getBluetoothPermissions(): Array<String> {
+        val list = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            list.add(Manifest.permission.BLUETOOTH_SCAN)
+            list.add(Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            list.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+            list.add(Manifest.permission.BLUETOOTH)
+            list.add(Manifest.permission.BLUETOOTH_ADMIN)
+        }
+        return list.toTypedArray()
+    }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -401,6 +438,79 @@ class MainActivity : FlutterActivity() {
 
                 else -> result.notImplemented()
             }
+        }
+
+        // Hardware Permissions Channel (Bluetooth, Location, Camera)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PERMISSION_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "checkPermissions" -> {
+                    val status = mutableMapOf<String, Any>()
+                    var allGranted = true
+                    for (perm in getRequiredPermissions()) {
+                        val granted = ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED
+                        status[perm] = granted
+                        if (!granted) allGranted = false
+                    }
+                    val btGranted = getBluetoothPermissions().all {
+                        ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+                    }
+                    val camGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                    status["allGranted"] = allGranted
+                    status["bluetooth"] = btGranted
+                    status["camera"] = camGranted
+                    result.success(status)
+                }
+
+                "requestPermissions" -> {
+                    val missing = getRequiredPermissions().filter {
+                        ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+                    }.toTypedArray()
+
+                    if (missing.isEmpty()) {
+                        result.success(true)
+                    } else {
+                        pendingPermissionResult = result
+                        ActivityCompat.requestPermissions(this, missing, PERMISSION_REQ_CODE)
+                    }
+                }
+
+                "requestBluetoothPermission" -> {
+                    val missing = getBluetoothPermissions().filter {
+                        ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+                    }.toTypedArray()
+
+                    if (missing.isEmpty()) {
+                        result.success(true)
+                    } else {
+                        pendingPermissionResult = result
+                        ActivityCompat.requestPermissions(this, missing, PERMISSION_REQ_CODE)
+                    }
+                }
+
+                "requestCameraPermission" -> {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        result.success(true)
+                    } else {
+                        pendingPermissionResult = result
+                        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), PERMISSION_REQ_CODE)
+                    }
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQ_CODE) {
+            val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            pendingPermissionResult?.success(allGranted)
+            pendingPermissionResult = null
         }
     }
 

@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.6.0] - 2026-10-29
+
+### 🚀 Added & Fixed
+- **Persistent Session & Cold Boot Auto-Login**:
+  - Added SessionManager powered by shared_preferences to persist merchant phone numbers, active store profile IDs, staff seat IDs, and JWT authentication tokens.
+  - Fixed volatile RAM heap wipe in LocalDatabase: configured path_provider application documents directory (ezo_local_db.json) on Android and localStorage JSON delegate on Web.
+  - Updated main.dart to automatically restore active sessions on cold app restarts and reboots, booting directly into the counter dashboard without prompting for login.
+- **Native Android Runtime Permissions Architecture**:
+  - Added Android Kotlin permission channels in MainActivity.kt (com.bharathisab.pos/permissions):
+    - Handled BLUETOOTH_CONNECT and BLUETOOTH_SCAN on Android 12+ (API 31+).
+    - Handled ACCESS_FINE_LOCATION and ACCESS_COARSE_LOCATION on Android 11 and below.
+    - Handled android.permission.CAMERA for barcode scanner and product photo capture.
+  - Added camera permission tags to AndroidManifest.xml.
+  - Built HardwarePermissionService with proactive startup prompts and just-in-time permission triggers on Printer, Scale, Barcode Scanner, and Camera actions.
+- **Automated Test Coverage**:
+  - Added comprehensive test suite session_persistence_and_permissions_test.dart (8 tests).
+  - 100% green test pass rate across 51 tests in the repository.
+
+---
+
 ## [1.5.0] - 2026-10-29
 
 ### 🚀 Added

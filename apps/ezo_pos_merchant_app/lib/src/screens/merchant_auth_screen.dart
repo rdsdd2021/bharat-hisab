@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/google_fonts.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import '../demo/demo_data_seeder.dart';
+import '../services/session_manager.dart';
 
 class MerchantAuthScreen extends StatefulWidget {
   final EzoOfflineRepository repository;
@@ -224,6 +225,14 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       }
     }
 
+    // Save persistent session in background
+    SessionManager.saveSession(
+      phone: phone,
+      storeId: profile.id,
+      staffId: staff.id,
+      token: cloudResult.token,
+    );
+
     widget.onAuthenticated(profile, staff);
   }
 
@@ -242,6 +251,12 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
     final cloudResult = await widget.repository.loginCloud(phone: phone, pin: pin);
 
     if (cloudResult.success && cloudResult.profile != null && cloudResult.staff != null) {
+      SessionManager.saveSession(
+        phone: phone,
+        storeId: cloudResult.profile!.id,
+        staffId: cloudResult.staff!.id,
+        token: cloudResult.token,
+      );
       widget.onAuthenticated(cloudResult.profile!, cloudResult.staff!);
       return;
     }
@@ -254,6 +269,11 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       final localProfile = widget.repository.getProfile(localStaff.storeProfileId) ??
           widget.repository.getAllProfiles().firstOrNull;
       if (localProfile != null) {
+        SessionManager.saveSession(
+          phone: phone,
+          storeId: localProfile.id,
+          staffId: localStaff.id,
+        );
         widget.onAuthenticated(localProfile, localStaff);
         return;
       }

@@ -14,3 +14,5 @@ dependency_overrides:
     path: ..\\..\\packages\\ezo_online_dukan_ai
   ezo_thermal_printer_escpos:
     path: ..\\..\\packages\\ezo_thermal_printer_escpos
+  shared_preferences_foundation: 2.4.0
+  path_provider_foundation: 2.4.0
