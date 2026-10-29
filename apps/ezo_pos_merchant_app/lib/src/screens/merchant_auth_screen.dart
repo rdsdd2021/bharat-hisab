@@ -231,6 +231,8 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       storeId: profile.id,
       staffId: staff.id,
       token: cloudResult.token,
+      profile: profile,
+      staff: staff,
     );
 
     widget.onAuthenticated(profile, staff);
@@ -256,6 +258,8 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
         storeId: cloudResult.profile!.id,
         staffId: cloudResult.staff!.id,
         token: cloudResult.token,
+        profile: cloudResult.profile!,
+        staff: cloudResult.staff!,
       );
       widget.onAuthenticated(cloudResult.profile!, cloudResult.staff!);
       return;
@@ -273,6 +277,8 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
           phone: phone,
           storeId: localProfile.id,
           staffId: localStaff.id,
+          profile: localProfile,
+          staff: localStaff,
         );
         widget.onAuthenticated(localProfile, localStaff);
         return;

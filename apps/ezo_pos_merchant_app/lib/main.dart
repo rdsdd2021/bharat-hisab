@@ -27,42 +27,91 @@ void main() async {
     BackendApiService.configureForDevice();
   }
 
-  // Initialize embedded offline local database with persistent storage
-  String? storageDir;
-  String? webInitialJson;
+  // Initialize SharedPreferences first for instant synchronous session reads
   final prefs = await SharedPreferences.getInstance();
+  SessionManager.init(prefs);
 
+  // Initialize embedded offline local database with dual persistence (SharedPreferences + Disk File)
+  String? storageDir;
   if (!kIsWeb) {
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
       storageDir = appDocDir.path;
     } catch (_) {}
-  } else {
-    webInitialJson = prefs.getString('ezo_local_db_json');
   }
+
+  final initialJson = prefs.getString('ezo_local_db_json');
 
   final localDb = LocalDatabase(
     storageDirectory: storageDir,
-    initialJsonData: webInitialJson,
-    onPersist: kIsWeb
-        ? (json) async {
-            await prefs.setString('ezo_local_db_json', json);
-          }
-        : null,
+    initialJsonData: initialJson,
+    onPersist: (json) async {
+      await prefs.setString('ezo_local_db_json', json);
+    },
   );
   await localDb.initialize();
 
   final repository = EzoOfflineRepository(db: localDb);
 
-  runApp(BharatHisabMerchantApp(repository: repository));
+  // Pre-resolve active merchant session BEFORE running the app widget tree
+  BusinessProfile? initialProfile;
+  StaffMember? initialStaff;
+
+  final isLoggedIn = SessionManager.isLoggedIn();
+  final savedStoreId = SessionManager.getActiveStoreId();
+  final savedStaffId = SessionManager.getActiveStaffId();
+  final savedPhone = SessionManager.getActivePhone();
+
+  if (savedStoreId != null) {
+    initialProfile = repository.getProfile(savedStoreId);
+  }
+  initialProfile ??= repository.getAllProfiles().firstOrNull;
+
+  if (savedStaffId != null) {
+    initialStaff = repository.getAllStaff().where((s) => s.id == savedStaffId).firstOrNull;
+  }
+  if (initialStaff == null && savedPhone != null) {
+    initialStaff = repository.getAllStaff().where((s) => s.phone == savedPhone).firstOrNull;
+  }
+  initialStaff ??= repository.getAllStaff().firstOrNull;
+
+  // Fallback: restore active user object directly from SessionManager SharedPreferences
+  if (initialProfile == null) {
+    initialProfile = SessionManager.getActiveProfile();
+    if (initialProfile != null) {
+      await repository.saveProfile(initialProfile);
+    }
+  }
+  if (initialStaff == null) {
+    initialStaff = SessionManager.getActiveStaff();
+    if (initialStaff != null) {
+      await repository.saveStaff(initialStaff);
+    }
+  }
+
+  // If user never logged in and repository has no profiles, nullify
+  if (!isLoggedIn && repository.getAllProfiles().isEmpty && SessionManager.getActiveProfile() == null) {
+    initialProfile = null;
+    initialStaff = null;
+  }
+
+  runApp(BharatHisabMerchantApp(
+    repository: repository,
+    initialProfile: initialProfile,
+    initialStaff: initialStaff,
+  ));
 }
 
 class BharatHisabMerchantApp extends StatefulWidget {
   final EzoOfflineRepository repository;
+  final BusinessProfile? initialProfile;
+  final StaffMember? initialStaff;
 
   const BharatHisabMerchantApp({
     super.key,
     required this.repository,
+    this.initialProfile,
+    this.initialStaff,
   });
 
   @override
@@ -72,57 +121,46 @@ class BharatHisabMerchantApp extends StatefulWidget {
 class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
   BusinessProfile? _authenticatedProfile;
   StaffMember? _authenticatedStaff;
-  bool _isLoadingSession = true;
 
   @override
   void initState() {
     super.initState();
-    // Synchronous immediate check if repository already has profiles in memory
-    final profiles = widget.repository.getAllProfiles();
-    final staff = widget.repository.getAllStaff();
-    if (profiles.isNotEmpty && staff.isNotEmpty) {
-      _authenticatedProfile = profiles.first;
-      _authenticatedStaff = staff.first;
-      _isLoadingSession = false;
+    _authenticatedProfile = widget.initialProfile;
+    _authenticatedStaff = widget.initialStaff;
+    if (_authenticatedProfile == null || _authenticatedStaff == null) {
+      _checkExistingSession();
     }
-    _checkExistingSession();
   }
 
-  Future<void> _checkExistingSession() async {
-    try {
-      final isLoggedIn = await SessionManager.isLoggedIn();
-      final savedStoreId = await SessionManager.getActiveStoreId();
-      final savedStaffId = await SessionManager.getActiveStaffId();
-      final savedPhone = await SessionManager.getActivePhone();
+  void _checkExistingSession() {
+    final isLoggedIn = SessionManager.isLoggedIn();
+    final savedStoreId = SessionManager.getActiveStoreId();
+    final savedStaffId = SessionManager.getActiveStaffId();
+    final savedPhone = SessionManager.getActivePhone();
 
-      final allProfiles = widget.repository.getAllProfiles();
-      final allStaff = widget.repository.getAllStaff();
+    final allProfiles = widget.repository.getAllProfiles();
+    final allStaff = widget.repository.getAllStaff();
 
-      BusinessProfile? profile;
-      StaffMember? staff;
+    BusinessProfile? profile;
+    StaffMember? staff;
 
-      if (savedStoreId != null) {
-        profile = widget.repository.getProfile(savedStoreId);
-      }
-      profile ??= allProfiles.firstOrNull;
+    if (savedStoreId != null) {
+      profile = widget.repository.getProfile(savedStoreId);
+    }
+    profile ??= allProfiles.firstOrNull ?? SessionManager.getActiveProfile();
 
-      if (savedStaffId != null) {
-        staff = allStaff.where((s) => s.id == savedStaffId).firstOrNull;
-      }
-      if (staff == null && savedPhone != null) {
-        staff = allStaff.where((s) => s.phone == savedPhone).firstOrNull;
-      }
-      staff ??= allStaff.firstOrNull;
+    if (savedStaffId != null) {
+      staff = allStaff.where((s) => s.id == savedStaffId).firstOrNull;
+    }
+    if (staff == null && savedPhone != null) {
+      staff = allStaff.where((s) => s.phone == savedPhone).firstOrNull;
+    }
+    staff ??= allStaff.firstOrNull ?? SessionManager.getActiveStaff();
 
-      if ((isLoggedIn || allProfiles.isNotEmpty) && profile != null && staff != null) {
+    if ((isLoggedIn || allProfiles.isNotEmpty) && profile != null && staff != null) {
+      setState(() {
         _authenticatedProfile = profile;
         _authenticatedStaff = staff;
-      }
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
-        _isLoadingSession = false;
       });
     }
   }
@@ -132,6 +170,8 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
       phone: staff.phone,
       storeId: profile.id,
       staffId: staff.id,
+      profile: profile,
+      staff: staff,
     );
     if (mounted) {
       setState(() {
@@ -154,10 +194,8 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
   Future<void> _onResetAll() async {
     await SessionManager.clearSession();
     await widget.repository.clearAll();
-    if (kIsWeb) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('ezo_local_db_json');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('ezo_local_db_json');
     if (mounted) {
       setState(() {
         _authenticatedProfile = null;
@@ -168,20 +206,6 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingSession && _authenticatedProfile == null) {
-      return MaterialApp(
-        title: 'BharatHisab (भारतहिसाब)',
-        debugShowCheckedModeBanner: false,
-        theme: EzoTheme.lightTheme,
-        home: const Scaffold(
-          backgroundColor: Color(0xFFF8FAFC),
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      );
-    }
-
     return MaterialApp(
       title: 'BharatHisab (भारतहिसाब)',
       debugShowCheckedModeBanner: false,

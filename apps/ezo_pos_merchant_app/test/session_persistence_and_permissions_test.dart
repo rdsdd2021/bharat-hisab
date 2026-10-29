@@ -1,14 +1,20 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
+import 'package:ezo_pos_merchant_app/main.dart';
+import 'package:ezo_pos_merchant_app/src/screens/main_shell_layout.dart';
+import 'package:ezo_pos_merchant_app/src/screens/merchant_auth_screen.dart';
 import 'package:ezo_pos_merchant_app/src/services/session_manager.dart';
 import 'package:ezo_pos_merchant_app/src/services/hardware_permission_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    SessionManager.init(prefs);
   });
 
   group('SessionManager & Persistent Auth Tests', () {
@@ -128,6 +134,72 @@ void main() {
       expect(restoredDb.getBusinessProfile('store_test_persist')?.storeName, equals('Shivaji Super Market'));
       expect(restoredDb.getAllStaffMembers().length, equals(1));
       expect(restoredDb.getStaffMember('staff_test_persist')?.fullName, equals('Shivaji Rao'));
+    });
+
+    testWidgets('BharatHisabMerchantApp boots directly into MainShellLayout on cold start when session exists', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final db = LocalDatabase();
+      await db.initialize();
+      final repo = EzoOfflineRepository(db: db);
+
+      final profile = BusinessProfile(
+        id: 'store_boot',
+        storeName: 'Pune Fresh Mart',
+        legalEntityName: 'Pune Fresh Mart Ltd',
+        gstin: '',
+        stateCode: '27',
+        stateName: 'Maharashtra',
+        address: 'MG Road, Pune',
+        phone: '9876543210',
+        email: 'pune@fresh.com',
+        upiId: 'pune@upi',
+        bankName: 'SBI',
+        accountNumber: '1234',
+        ifscCode: 'SBIN0001',
+        defaultPrintFormat: PrintFormat.chota58mm,
+        industryVertical: IndustryVertical.kiranaGrocery,
+        branding: const WhiteLabelBranding(
+          brandAppName: 'BharatHisab',
+          resellerCompanyName: 'Bharat',
+          supportWhatsApp: '9876543210',
+          primaryColorHex: '#1E88E5',
+          accentColorHex: '#4F46E5',
+          receiptFooterTagline: 'Thanks',
+        ),
+      );
+
+      final staff = StaffMember(
+        id: 'staff_boot',
+        storeProfileId: profile.id,
+        fullName: 'Ramesh Patel',
+        phone: '9876543210',
+        pinCode: '1234',
+        role: StaffRole.ownerAdmin,
+        canEditPrices: true,
+        canDeleteBills: true,
+        canViewProfitReports: true,
+        canCollectUdhaar: true,
+        createdAt: DateTime.now(),
+      );
+
+      await repo.saveProfile(profile);
+      await repo.saveStaff(staff);
+
+      await tester.pumpWidget(
+        BharatHisabMerchantApp(
+          repository: repo,
+          initialProfile: profile,
+          initialStaff: staff,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MainShellLayout), findsOneWidget);
+      expect(find.byType(MerchantAuthScreen), findsNothing);
     });
   });
 

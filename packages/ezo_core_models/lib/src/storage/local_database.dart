@@ -34,7 +34,8 @@ class LocalDatabase {
   Future<void> initialize() async {
     if (initialJsonData != null && initialJsonData!.trim().isNotEmpty) {
       _loadFromJson(initialJsonData!);
-    } else if (storageDirectory != null) {
+    }
+    if (_businessProfiles.isEmpty && storageDirectory != null) {
       try {
         final dir = Directory(storageDirectory!);
         if (!dir.existsSync()) {
@@ -122,6 +123,9 @@ class LocalDatabase {
     if (storageDirectory != null) {
       try {
         final file = File('$storageDirectory/ezo_local_db.json');
+        if (!file.parent.existsSync()) {
+          file.parent.createSync(recursive: true);
+        }
         await file.writeAsString(jsonStr, flush: true);
       } catch (_) {}
     }
