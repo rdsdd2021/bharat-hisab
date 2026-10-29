@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -8,7 +9,7 @@ import '../services/session_manager.dart';
 
 class MerchantAuthScreen extends StatefulWidget {
   final EzoOfflineRepository repository;
-  final void Function(BusinessProfile profile, StaffMember staff) onAuthenticated;
+  final FutureOr<void> Function(BusinessProfile profile, StaffMember staff) onAuthenticated;
   final int initialTab;
 
   const MerchantAuthScreen({
@@ -225,8 +226,8 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       }
     }
 
-    // Save persistent session in background
-    SessionManager.saveSession(
+    // Explicitly await persistent session across SharedPreferences and physical disk
+    await SessionManager.saveSession(
       phone: phone,
       storeId: profile.id,
       staffId: staff.id,
@@ -235,7 +236,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       staff: staff,
     );
 
-    widget.onAuthenticated(profile, staff);
+    await widget.onAuthenticated(profile, staff);
   }
 
   void _handleSignIn() async {
@@ -253,7 +254,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
     final cloudResult = await widget.repository.loginCloud(phone: phone, pin: pin);
 
     if (cloudResult.success && cloudResult.profile != null && cloudResult.staff != null) {
-      SessionManager.saveSession(
+      await SessionManager.saveSession(
         phone: phone,
         storeId: cloudResult.profile!.id,
         staffId: cloudResult.staff!.id,
@@ -261,7 +262,7 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
         profile: cloudResult.profile!,
         staff: cloudResult.staff!,
       );
-      widget.onAuthenticated(cloudResult.profile!, cloudResult.staff!);
+      await widget.onAuthenticated(cloudResult.profile!, cloudResult.staff!);
       return;
     }
 
@@ -273,14 +274,14 @@ class _MerchantAuthScreenState extends State<MerchantAuthScreen> with SingleTick
       final localProfile = widget.repository.getProfile(localStaff.storeProfileId) ??
           widget.repository.getAllProfiles().firstOrNull;
       if (localProfile != null) {
-        SessionManager.saveSession(
+        await SessionManager.saveSession(
           phone: phone,
           storeId: localProfile.id,
           staffId: localStaff.id,
           profile: localProfile,
           staff: localStaff,
         );
-        widget.onAuthenticated(localProfile, localStaff);
+        await widget.onAuthenticated(localProfile, localStaff);
         return;
       }
     }

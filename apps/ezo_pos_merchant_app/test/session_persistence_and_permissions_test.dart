@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -200,6 +201,108 @@ void main() {
 
       expect(find.byType(MainShellLayout), findsOneWidget);
       expect(find.byType(MerchantAuthScreen), findsNothing);
+    });
+
+    test('SessionManager restores active profile and staff from physical disk file when SharedPreferences is blank', () async {
+      final tempDir = Directory.systemTemp.createTempSync('session_test_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      final prefs = await SharedPreferences.getInstance();
+      SessionManager.init(prefs, storageDirectory: tempDir.path);
+
+      final profile = BusinessProfile(
+        id: 'store_disk_fallback',
+        storeName: 'Disk Mirror Grocery',
+        legalEntityName: 'Disk Mirror Ltd',
+        gstin: '',
+        stateCode: '27',
+        stateName: 'Maharashtra',
+        address: 'MG Road, Pune',
+        phone: '9811223344',
+        email: 'disk@mirror.com',
+        upiId: 'disk@upi',
+        bankName: 'SBI',
+        accountNumber: '1111',
+        ifscCode: 'SBIN0001',
+        defaultPrintFormat: PrintFormat.chota58mm,
+        industryVertical: IndustryVertical.kiranaGrocery,
+        branding: const WhiteLabelBranding(
+          brandAppName: 'BharatHisab',
+          resellerCompanyName: 'Bharat',
+          supportWhatsApp: '9811223344',
+          primaryColorHex: '#1E88E5',
+          accentColorHex: '#4F46E5',
+          receiptFooterTagline: 'Thanks',
+        ),
+      );
+
+      final staff = StaffMember(
+        id: 'staff_disk_fallback',
+        storeProfileId: profile.id,
+        fullName: 'Aakash Sharma',
+        phone: '9811223344',
+        pinCode: '1234',
+        role: StaffRole.ownerAdmin,
+        canEditPrices: true,
+        canDeleteBills: true,
+        canViewProfitReports: true,
+        canCollectUdhaar: true,
+        createdAt: DateTime.now(),
+      );
+
+      // Save session with disk mirroring
+      await SessionManager.saveSession(
+        phone: '9811223344',
+        storeId: profile.id,
+        staffId: staff.id,
+        profile: profile,
+        staff: staff,
+      );
+
+      final diskFile = File('${tempDir.path}/bh_session.json');
+      expect(diskFile.existsSync(), isTrue);
+
+      // Simulate SharedPreferences being cleared (e.g. Android cache flush)
+      SharedPreferences.setMockInitialValues({});
+      final cleanPrefs = await SharedPreferences.getInstance();
+
+      // Initialize with clean prefs, but point to existing disk directory
+      SessionManager.init(cleanPrefs, storageDirectory: tempDir.path);
+
+      expect(SessionManager.isLoggedIn(), isTrue);
+      expect(SessionManager.getActivePhone(), equals('9811223344'));
+      expect(SessionManager.getActiveStoreId(), equals('store_disk_fallback'));
+      expect(SessionManager.getActiveStaffId(), equals('staff_disk_fallback'));
+      expect(SessionManager.getActiveProfile()?.storeName, equals('Disk Mirror Grocery'));
+      expect(SessionManager.getActiveStaff()?.fullName, equals('Aakash Sharma'));
+
+      // Test clean logout deletes disk file
+      await SessionManager.clearSession();
+      expect(diskFile.existsSync(), isFalse);
+      expect(SessionManager.isLoggedIn(), isFalse);
+    });
+
+    testWidgets('BharatHisabMerchantApp boots into MerchantAuthScreen when not logged in', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final db = LocalDatabase();
+      await db.initialize();
+      final repo = EzoOfflineRepository(db: db);
+
+      await tester.pumpWidget(
+        BharatHisabMerchantApp(
+          repository: repo,
+          initialProfile: null,
+          initialStaff: null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MerchantAuthScreen), findsOneWidget);
+      expect(find.byType(MainShellLayout), findsNothing);
     });
   });
 

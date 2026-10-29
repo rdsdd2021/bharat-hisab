@@ -21,17 +21,11 @@ void main() async {
     BackendApiService.configureForDevice(isPhysicalPhone: true);
     ThermalPrinterConnectionManager().registerTransportDriver(AndroidBluetoothPrinterDriver());
     WeighingScaleManager().registerTransportDriver(AndroidWeighingScaleDriver());
-    // Proactively request Android hardware permissions on app launch
-    HardwarePermissionService.requestAllHardwarePermissions();
   } else {
     BackendApiService.configureForDevice();
   }
 
-  // Initialize SharedPreferences first for instant synchronous session reads
-  final prefs = await SharedPreferences.getInstance();
-  SessionManager.init(prefs);
-
-  // Initialize embedded offline local database with dual persistence (SharedPreferences + Disk File)
+  // Obtain storage directory early for both SessionManager & LocalDatabase
   String? storageDir;
   if (!kIsWeb) {
     try {
@@ -40,6 +34,11 @@ void main() async {
     } catch (_) {}
   }
 
+  // Initialize SharedPreferences with dual-persistence disk fallback
+  final prefs = await SharedPreferences.getInstance();
+  SessionManager.init(prefs, storageDirectory: storageDir);
+
+  // Initialize embedded offline local database with dual persistence (SharedPreferences + Disk File)
   final initialJson = prefs.getString('ezo_local_db_json');
 
   final localDb = LocalDatabase(
@@ -58,39 +57,33 @@ void main() async {
   StaffMember? initialStaff;
 
   final isLoggedIn = SessionManager.isLoggedIn();
-  final savedStoreId = SessionManager.getActiveStoreId();
-  final savedStaffId = SessionManager.getActiveStaffId();
-  final savedPhone = SessionManager.getActivePhone();
+  if (isLoggedIn) {
+    final savedStoreId = SessionManager.getActiveStoreId();
+    final savedStaffId = SessionManager.getActiveStaffId();
+    final savedPhone = SessionManager.getActivePhone();
 
-  if (savedStoreId != null) {
-    initialProfile = repository.getProfile(savedStoreId);
-  }
-  initialProfile ??= repository.getAllProfiles().firstOrNull;
+    if (savedStoreId != null) {
+      initialProfile = repository.getProfile(savedStoreId);
+    }
+    initialProfile ??= repository.getAllProfiles().firstOrNull ?? SessionManager.getActiveProfile();
 
-  if (savedStaffId != null) {
-    initialStaff = repository.getAllStaff().where((s) => s.id == savedStaffId).firstOrNull;
-  }
-  if (initialStaff == null && savedPhone != null) {
-    initialStaff = repository.getAllStaff().where((s) => s.phone == savedPhone).firstOrNull;
-  }
-  initialStaff ??= repository.getAllStaff().firstOrNull;
+    if (savedStaffId != null) {
+      initialStaff = repository.getAllStaff().where((s) => s.id == savedStaffId).firstOrNull;
+    }
+    if (initialStaff == null && savedPhone != null) {
+      initialStaff = repository.getAllStaff().where((s) => s.phone == savedPhone).firstOrNull;
+    }
+    initialStaff ??= repository.getAllStaff().firstOrNull ?? SessionManager.getActiveStaff();
 
-  // Fallback: restore active user object directly from SessionManager SharedPreferences
-  if (initialProfile == null) {
-    initialProfile = SessionManager.getActiveProfile();
-    if (initialProfile != null) {
+    // Ensure repository has the active profile and staff in memory if recovered from SessionManager
+    if (initialProfile != null && repository.getProfile(initialProfile.id) == null) {
       await repository.saveProfile(initialProfile);
     }
-  }
-  if (initialStaff == null) {
-    initialStaff = SessionManager.getActiveStaff();
-    if (initialStaff != null) {
+    if (initialStaff != null && !repository.getAllStaff().any((s) => s.id == initialStaff!.id)) {
       await repository.saveStaff(initialStaff);
     }
-  }
-
-  // If user never logged in and repository has no profiles, nullify
-  if (!isLoggedIn && repository.getAllProfiles().isEmpty && SessionManager.getActiveProfile() == null) {
+  } else {
+    // Explicitly unauthenticated state: force landing on Auth screen
     initialProfile = null;
     initialStaff = null;
   }
@@ -118,22 +111,48 @@ class BharatHisabMerchantApp extends StatefulWidget {
   State<BharatHisabMerchantApp> createState() => _BharatHisabMerchantAppState();
 }
 
-class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
+class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> with WidgetsBindingObserver {
   BusinessProfile? _authenticatedProfile;
   StaffMember? _authenticatedStaff;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _authenticatedProfile = widget.initialProfile;
     _authenticatedStaff = widget.initialStaff;
+
     if (_authenticatedProfile == null || _authenticatedStaff == null) {
       _checkExistingSession();
+    }
+
+    // Request Android hardware permissions once the UI frame has rendered
+    // and Activity is guaranteed to be in the RESUMED state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        HardwarePermissionService.requestAllHardwarePermissions();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // Flushes all in-memory repository mutations to physical disk when merchant background-switches app
+      widget.repository.flushToDisk();
     }
   }
 
   void _checkExistingSession() {
     final isLoggedIn = SessionManager.isLoggedIn();
+    if (!isLoggedIn) return;
+
     final savedStoreId = SessionManager.getActiveStoreId();
     final savedStaffId = SessionManager.getActiveStaffId();
     final savedPhone = SessionManager.getActivePhone();
@@ -157,7 +176,7 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
     }
     staff ??= allStaff.firstOrNull ?? SessionManager.getActiveStaff();
 
-    if ((isLoggedIn || allProfiles.isNotEmpty) && profile != null && staff != null) {
+    if (profile != null && staff != null) {
       setState(() {
         _authenticatedProfile = profile;
         _authenticatedStaff = staff;
@@ -165,7 +184,7 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
     }
   }
 
-  void _onAuthenticated(BusinessProfile profile, StaffMember staff) async {
+  Future<void> _onAuthenticated(BusinessProfile profile, StaffMember staff) async {
     await SessionManager.saveSession(
       phone: staff.phone,
       storeId: profile.id,
@@ -173,6 +192,10 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
       profile: profile,
       staff: staff,
     );
+    await widget.repository.saveProfile(profile);
+    await widget.repository.saveStaff(staff);
+    await widget.repository.flushToDisk();
+
     if (mounted) {
       setState(() {
         _authenticatedProfile = profile;
@@ -183,6 +206,7 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
 
   Future<void> _onLogout() async {
     await SessionManager.clearSession();
+    await widget.repository.flushToDisk();
     if (mounted) {
       setState(() {
         _authenticatedStaff = null;
@@ -196,6 +220,7 @@ class _BharatHisabMerchantAppState extends State<BharatHisabMerchantApp> {
     await widget.repository.clearAll();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('ezo_local_db_json');
+    await widget.repository.flushToDisk();
     if (mounted) {
       setState(() {
         _authenticatedProfile = null;

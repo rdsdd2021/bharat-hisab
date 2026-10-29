@@ -96,7 +96,7 @@ class BackendApiService {
           'stateName': stateName ?? 'Maharashtra',
           'isGstEnabled': isGstEnabled,
         }),
-      );
+      ).timeout(const Duration(milliseconds: 1500));
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -141,7 +141,7 @@ class BackendApiService {
           'phone': phone.trim(),
           'pin': pin.trim(),
         }),
-      );
+      ).timeout(const Duration(milliseconds: 1500));
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 

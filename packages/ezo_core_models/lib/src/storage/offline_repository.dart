@@ -256,4 +256,7 @@ class EzoOfflineRepository {
       return false;
     }
   }
+
+  /// Explicitly flushes all in-memory repository mutations to physical disk storage
+  Future<void> flushToDisk() => db.flushToDisk();
 }
