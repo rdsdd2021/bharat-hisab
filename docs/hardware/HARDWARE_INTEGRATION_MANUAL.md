@@ -119,33 +119,45 @@ TOTAL ITEMS: 9
 
 ---
 
-## 5. Electronic Weighing Scale Integration (RS-232 / USB Serial)
+## 5. Electronic Weighing Scale Integration (RS-232 / USB / Bluetooth Serial)
 
-Kirana stores and supermarkets weigh loose items (Potatoes, Rice, Dry Fruits, Sweets). BharatHisab connects to weighing scales via USB-to-UART or Serial RS-232 adapters.
+Kirana stores, supermarkets, and sweet shops weigh loose items (Potatoes, Rice, Dry Fruits, Sweets, Sugar). BharatHisab connects directly to electronic weighing scales (Essae, Phoenix, Citizen, Sansui, CAS, Metis, Eagle) via Bluetooth SPP or USB-to-UART / Serial RS-232 OTG adapters.
 
-### 5.1 Communication Protocols
-- **Baud Rate**: Typically `9600 bps`, Data Bits: `8`, Parity: `None`, Stop Bits: `1`.
-- **Transmission Modes**:
-  1. **Continuous Stream**: The scale continuously outputs `ST,GS,+001.250kg\r\n`.
-  2. **Polled Mode**: The POS sends `W\r\n` (Weight enquiry) and awaits response.
+### 5.1 Communication Protocols & Hardware Interfaces
+- **Serial Interface**: RS-232 DB9 via USB-OTG (CH340, CP2102, FTDI, Prolific) or Bluetooth SPP (`UUID: 00001101-0000-1000-8000-00805F9B34FB`).
+- **Baud Rate**: Typically `9600 bps`, Data Bits: `8`, Parity: `None`, Stop Bits: `1` (User selectable: 9600, 4800, 2400, 19200).
+- **Supported Transmission Protocols**:
+  1. **Continuous Stream (Standard Indian)**: Outputs `ST,GS,+001.250kg\r\n` (ST = Stable, US = Unstable, GS = Gross, NT = Net).
+  2. **Phoenix / Essae Format**: Outputs `WN001.250KG\r\n` or `WG001.250KG\r\n`.
+  3. **Prefix Equals / Plus**: Outputs `=01.250\r` or `+001.250\r\n`.
+  4. **Toledo STX/ETX**: Outputs `\x02001.250\x03`.
+  5. **Polled Mode**: POS transmits `W\r\n` enquiry command.
 
-### 5.2 Real-Time Weight Parsing Logic
+### 5.2 Real-Time Weight Parsing Engine (`WeighingScaleParser`)
+Implemented in [`packages/ezo_inventory_barcode/lib/src/weighing_scale_models.dart`](../../packages/ezo_inventory_barcode/lib/src/weighing_scale_models.dart):
+- Automatically extracts signed weight values, normalizes grams (`g`) to kilograms (`kg`), checks stability status (`ST` vs `US`), flags net tare (`NT`), and catches overload states (`OL`).
 
-```dart
-double parseScaleReading(String rawBuffer) {
-  // Regex extracting signed floating point before 'kg' or 'g'
-  final regex = RegExp(r'([+\-]?\d+\.?\d*)\s*(kg|g)', caseSensitive: false);
-  final match = regex.firstMatch(rawBuffer);
-  if (match != null) {
-    double value = double.tryParse(match.group(1) ?? '0.0') ?? 0.0;
-    if (match.group(2)?.toLowerCase() == 'g') {
-      value /= 1000.0; // Normalize grams to kg
-    }
-    return value;
-  }
-  return 0.0;
-}
-```
+### 5.3 Low-Level Native Android Integration (`MainActivity.kt`)
+- **MethodChannel**: `com.bharathisab.pos/weighing_scale`
+  - `getBondedScales`: Retrieves paired Bluetooth scales.
+  - `getUsbDevices`: Queries Android `UsbManager` for connected USB serial adapters.
+  - `connectBluetoothScale(address)`: Connects RFCOMM socket on `Dispatchers.IO`.
+  - `zeroScale()`: Dispatches `"Z\r\n"` hardware command.
+  - `tareScale()`: Dispatches `"T\r\n"` hardware command.
+  - `disconnectScale()`: Closes socket and reading coroutines cleanly.
+- **EventChannel**: `com.bharathisab.pos/weighing_scale_stream`
+  - Continuously streams raw incoming byte buffers directly to Dart as high-frequency scale events.
+
+### 5.4 POS Counter & Cart Integration
+- **Kirana Live Status Pill**: Header toolbar in `PosBillingScreen` displays real-time connection badge (`🟢 1.450 KG (Live)` / `⚪ Connect Scale`).
+- **Interactive Electronic Scale Modal (`WeighingScaleModal`)**:
+  - High-contrast 7-segment digital display with annunciator LEDs (`STABLE`, `NET`, `ZERO`, `TARE`).
+  - Hardware calibration buttons (`ZERO SCALE`, `TARE BOWL`, `RESET TARE`).
+  - Simulator tab with quick weight chips (`250g`, `500g`, `1kg`, `2kg`, `5kg`) and custom slider for demonstration without physical scales.
+- **Loose-Item Cart Auto-Weighing**:
+  - Loose items (`unit == ItemUnit.kg`) show a dedicated `[ ⚖️ Weigh ]` action button next to cart lines.
+  - Tapping it or applying from `WeighingScaleModal` captures live scale weight into invoice line items with full decimal precision (e.g., 2.450 KG × ₹42.00 = ₹102.90).
+
 
 ---
 

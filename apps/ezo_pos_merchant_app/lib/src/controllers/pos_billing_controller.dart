@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:ezo_core_models/ezo_core_models.dart';
 import 'package:ezo_gst_tax_engine/ezo_gst_tax_engine.dart';
@@ -6,6 +7,10 @@ import '../demo/demo_data_seeder.dart';
 
 class PosBillingController extends ChangeNotifier {
   final EzoOfflineRepository repository;
+
+  // Weighing Scale Integration
+  final WeighingScaleManager _scaleManager = WeighingScaleManager();
+  StreamSubscription<WeighingScaleReading>? _scaleSubscription;
 
   // Active Store Profile & Staff
   BusinessProfile _currentProfile;
@@ -39,7 +44,17 @@ class PosBillingController extends ChangeNotifier {
     required BusinessProfile initialProfile,
     StaffMember? initialStaff,
   })  : _currentProfile = initialProfile,
-        _currentStaff = initialStaff;
+        _currentStaff = initialStaff {
+    _scaleSubscription = _scaleManager.weightStream.listen((_) {
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scaleSubscription?.cancel();
+    super.dispose();
+  }
 
   // Getters
   BusinessProfile get currentProfile => _currentProfile;
@@ -53,6 +68,37 @@ class PosBillingController extends ChangeNotifier {
   PartyAccount? get selectedCustomer => _selectedCustomer;
   double get billDiscount => _billDiscount;
   InvoiceCustomFields get customFields => _customFields;
+
+  // Weighing Scale Getters & Actions
+  double get liveScaleWeightKg => _scaleManager.currentReading.weightKg;
+  bool get isScaleConnected => _scaleManager.isConnected;
+  bool get isScaleStable => _scaleManager.currentReading.isStable;
+  bool get isScaleTare => _scaleManager.currentReading.isTare;
+  WeighingScaleReading get currentScaleReading => _scaleManager.currentReading;
+  WeighingScaleManager get scaleManager => _scaleManager;
+
+  bool applyScaleWeightToCartLine(int lineIndex) {
+    if (lineIndex < 0 || lineIndex >= _cartLines.length) return false;
+    final weight = liveScaleWeightKg;
+    if (weight <= 0.0) return false;
+    updateCartLineQty(lineIndex, weight);
+    return true;
+  }
+
+  void tareScale() {
+    _scaleManager.tareScale();
+    notifyListeners();
+  }
+
+  void zeroScale() {
+    _scaleManager.zeroScale();
+    notifyListeners();
+  }
+
+  void setSimulatedScaleWeight(double weightKg, {bool isStable = true}) {
+    _scaleManager.simulateWeight(weightKg, isStable: isStable);
+    notifyListeners();
+  }
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
 

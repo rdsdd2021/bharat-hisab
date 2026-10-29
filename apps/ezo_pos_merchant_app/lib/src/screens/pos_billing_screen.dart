@@ -8,6 +8,7 @@ import '../controllers/pos_billing_controller.dart';
 import '../theme/ezo_theme.dart';
 import '../widgets/barcode_scanner_modal.dart';
 import '../widgets/product_image_picker.dart';
+import '../widgets/weighing_scale_modal.dart';
 import 'receipt_preview_modal.dart';
 
 class PosBillingScreen extends StatefulWidget {
@@ -1096,7 +1097,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                                       spacing: 4,
                                       children: [
                                         Text(
-                                          '₹${line.unitSellingPrice.toStringAsFixed(2)} × ${line.quantity.toInt()} = ₹${line.totalAmount.toStringAsFixed(2)}',
+                                          '₹${line.unitSellingPrice.toStringAsFixed(2)} × ${line.quantity % 1 == 0 ? line.quantity.toInt() : line.quantity.toStringAsFixed(3)} = ₹${line.totalAmount.toStringAsFixed(2)}',
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 11,
                                             color: EzoColors.primary,
@@ -1120,6 +1121,40 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                                             ),
                                           ),
                                         const Icon(LucideIcons.pencil, size: 10, color: EzoColors.primary),
+                                        if (prod?.unit == ItemUnit.kg || c.currentProfile.industryVertical == IndustryVertical.kiranaGrocery)
+                                          InkWell(
+                                            onTap: () {
+                                              WeighingScaleModal.show(
+                                                context,
+                                                targetCartLineIndex: idx,
+                                                targetItemName: prodName,
+                                                onWeightApplied: (wt) => c.updateCartLineQty(idx, wt),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEFF6FF),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(color: const Color(0xFFBFDBFE)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(LucideIcons.scale, size: 9, color: Color(0xFF1E88E5)),
+                                                  const SizedBox(width: 2),
+                                                  Text(
+                                                    'Weigh',
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: const Color(0xFF1E40AF),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -1143,7 +1178,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                                     ),
                                   ),
                                   Text(
-                                    '${line.quantity.toInt()}',
+                                    line.quantity % 1 == 0 ? '${line.quantity.toInt()}' : line.quantity.toStringAsFixed(2),
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
@@ -4029,12 +4064,23 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                   style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFF93C5FD))),
-                  child: Text(
-                    '1.000 KG (Live RS-232 / USB)',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
+                InkWell(
+                  onTap: () => WeighingScaleModal.show(context),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: c.isScaleConnected ? const Color(0xFFDCFCE7) : Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: c.isScaleConnected ? const Color(0xFF86EFAC) : const Color(0xFF93C5FD))),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          c.isScaleConnected ? '${c.liveScaleWeightKg.toStringAsFixed(3)} KG (${c.isScaleStable ? "Live" : "Settling"})' : '1.000 KG (Live RS-232 / USB)',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w700, color: const Color(0xFF1E40AF)),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(LucideIcons.chevronDown, size: 12, color: Color(0xFF1E40AF)),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

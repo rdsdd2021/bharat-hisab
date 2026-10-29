@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.5.0] - 2026-10-29
+
+### 🚀 Added
+- **Electronic Weighing Scale Hardware Stack (Phase 2 Integration)**:
+  - Implemented real-time serial parsing engine (`WeighingScaleParser`) in `packages/ezo_inventory_barcode`:
+    - Full support for Indian retail scale protocols: Continuous Stream (`ST,GS,+001.250kg`), Phoenix / Essae (`WN001.250KG`), Prefix Equals/Plus (`=01.250`), Toledo STX/ETX, and generic Grams/Kilograms normalization.
+    - Automatic stability detection (`ST` vs `US`), net tare flag identification (`NT`), and overload protection (`OL`).
+  - Added low-level Android USB-Host OTG & Bluetooth Serial channels in `MainActivity.kt`:
+    - MethodChannel `com.bharathisab.pos/weighing_scale` (`getBondedScales`, `getUsbDevices`, `connectBluetoothScale`, `zeroScale`, `tareScale`, `disconnectScale`).
+    - EventChannel `com.bharathisab.pos/weighing_scale_stream` with high-frequency streaming coroutine on `Dispatchers.IO`.
+    - Added `android.hardware.usb.host` feature tag in `AndroidManifest.xml`.
+  - Built `WeighingScaleManager` singleton and platform driver `AndroidWeighingScaleDriver` with synchronous net weight computation and platform fallback.
+- **Interactive Electronic Scale Modal (`WeighingScaleModal`)**:
+  - High-contrast 7-segment digital display with annunciator LED indicators (`STABLE`, `NET`, `ZERO`, `TARE`).
+  - Hardware calibration controls (`ZERO SCALE`, `TARE BOWL`, `RESET TARE`).
+  - Multi-interface connection tabs:
+    - **Bluetooth Scale**: Scans and connects to paired / broadcasting Bluetooth scales (Essae, Phoenix, Citizen, CAS, Metis).
+    - **USB-OTG Serial**: Scans USB-Serial COM ports with configurable baud rates (9600, 4800, 2400, 19200).
+    - **Digital Simulator**: Quick weight chips (`250g`, `500g`, `1kg`, `2kg`, `5kg`) and custom slider for demonstration without physical scales.
+  - "Apply Weight to Item" one-tap checkout action.
+- **POS Counter & Cart Loose-Item Integration (`PosBillingScreen`)**:
+  - Live weighing scale indicator pill in Kirana counter header (`🟢 1.450 KG (Live)` / `⚪ 1.000 KG (Live RS-232 / USB)`) with one-tap modal launch.
+  - Added `[ ⚖️ Weigh ]` action button next to cart lines for loose items (`unit == ItemUnit.kg`), enabling instant capture of scale readings into the invoice.
+  - Upgraded quantity display to support fractional decimal quantities (e.g. `2.450 KG`) across cart item lines and totals.
+- **Automated Verification**:
+  - Added `test/weighing_scale_hardware_test.dart` verifying all 6 parsing formats, tare/zero calculations, loose-item cart integration, and full modal UI interaction.
+  - 100% test coverage with 38 passing tests across 6 test suites.
+
+---
+
 ## [1.4.0] - 2026-10-28
 
 ### 🚀 Added
