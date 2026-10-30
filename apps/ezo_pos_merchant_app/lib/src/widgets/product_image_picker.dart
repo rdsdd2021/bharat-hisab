@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -373,18 +374,32 @@ class ProductImagePicker extends StatelessWidget {
         imageQuality: 85,
       );
       if (photo != null) {
-        String finalPath = photo.path;
-        try {
-          final docDir = await getApplicationDocumentsDirectory();
-          final imgDir = Directory('${docDir.path}/product_images');
-          if (!imgDir.existsSync()) {
-            imgDir.createSync(recursive: true);
+        String finalPath;
+        if (kIsWeb) {
+          final bytes = await photo.readAsBytes();
+          final mime = photo.mimeType ?? 'image/jpeg';
+          final base64Str = base64Encode(bytes);
+          finalPath = 'data:$mime;base64,$base64Str';
+        } else {
+          finalPath = photo.path;
+          try {
+            final docDir = await getApplicationDocumentsDirectory();
+            final imgDir = io.Directory('${docDir.path}/product_images');
+            if (!imgDir.existsSync()) {
+              imgDir.createSync(recursive: true);
+            }
+            final ext = photo.name.contains('.') ? photo.name.split('.').last : 'jpg';
+            final savedFile = io.File('${imgDir.path}/prod_${DateTime.now().millisecondsSinceEpoch}.$ext');
+            await io.File(photo.path).copy(savedFile.path);
+            finalPath = savedFile.path;
+          } catch (_) {
+            try {
+              final bytes = await photo.readAsBytes();
+              final base64Str = base64Encode(bytes);
+              finalPath = 'data:image/jpeg;base64,$base64Str';
+            } catch (_) {}
           }
-          final ext = photo.name.contains('.') ? photo.name.split('.').last : 'jpg';
-          final savedFile = File('${imgDir.path}/prod_${DateTime.now().millisecondsSinceEpoch}.$ext');
-          await File(photo.path).copy(savedFile.path);
-          finalPath = savedFile.path;
-        } catch (_) {}
+        }
 
         onImageChanged(finalPath);
         if (sheetCtx.mounted) Navigator.pop(sheetCtx);
@@ -398,15 +413,23 @@ class ProductImagePicker extends StatelessWidget {
           );
         }
         return;
+      } else {
+        // User cancelled camera capture
+        if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+        return;
       }
     } catch (e) {
-      debugPrint('Real camera capture fallback: $e');
+      debugPrint('Real camera capture error: $e');
+      if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+      if (parentCtx.mounted) {
+        ScaffoldMessenger.of(parentCtx).showSnackBar(
+          SnackBar(
+            content: Text('Camera capture failed: $e'),
+            backgroundColor: EzoColors.error,
+          ),
+        );
+      }
     }
-
-    // Graceful fallback for test runner / VM
-    const simulatedSnap = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80';
-    onImageChanged(simulatedSnap);
-    if (sheetCtx.mounted) Navigator.pop(sheetCtx);
   }
 
   Future<void> _pickFromGallery(BuildContext sheetCtx, BuildContext parentCtx) async {
@@ -419,18 +442,32 @@ class ProductImagePicker extends StatelessWidget {
         imageQuality: 85,
       );
       if (photo != null) {
-        String finalPath = photo.path;
-        try {
-          final docDir = await getApplicationDocumentsDirectory();
-          final imgDir = Directory('${docDir.path}/product_images');
-          if (!imgDir.existsSync()) {
-            imgDir.createSync(recursive: true);
+        String finalPath;
+        if (kIsWeb) {
+          final bytes = await photo.readAsBytes();
+          final mime = photo.mimeType ?? 'image/jpeg';
+          final base64Str = base64Encode(bytes);
+          finalPath = 'data:$mime;base64,$base64Str';
+        } else {
+          finalPath = photo.path;
+          try {
+            final docDir = await getApplicationDocumentsDirectory();
+            final imgDir = io.Directory('${docDir.path}/product_images');
+            if (!imgDir.existsSync()) {
+              imgDir.createSync(recursive: true);
+            }
+            final ext = photo.name.contains('.') ? photo.name.split('.').last : 'jpg';
+            final savedFile = io.File('${imgDir.path}/prod_${DateTime.now().millisecondsSinceEpoch}.$ext');
+            await io.File(photo.path).copy(savedFile.path);
+            finalPath = savedFile.path;
+          } catch (_) {
+            try {
+              final bytes = await photo.readAsBytes();
+              final base64Str = base64Encode(bytes);
+              finalPath = 'data:image/jpeg;base64,$base64Str';
+            } catch (_) {}
           }
-          final ext = photo.name.contains('.') ? photo.name.split('.').last : 'jpg';
-          final savedFile = File('${imgDir.path}/prod_${DateTime.now().millisecondsSinceEpoch}.$ext');
-          await File(photo.path).copy(savedFile.path);
-          finalPath = savedFile.path;
-        } catch (_) {}
+        }
 
         onImageChanged(finalPath);
         if (sheetCtx.mounted) Navigator.pop(sheetCtx);
@@ -444,13 +481,26 @@ class ProductImagePicker extends StatelessWidget {
           );
         }
         return;
+      } else {
+        // User cancelled gallery selection
+        if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+        return;
       }
     } catch (e) {
-      debugPrint('Gallery pick fallback: $e');
+      debugPrint('Gallery pick error: $e');
+      if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+      if (parentCtx.mounted) {
+        ScaffoldMessenger.of(parentCtx).showSnackBar(
+          SnackBar(
+            content: Text('Image selection failed: $e'),
+            backgroundColor: EzoColors.error,
+          ),
+        );
+      }
     }
   }
 
-  /// Reusable thumbnail builder that handles both remote web URLs and local device file paths
+  /// Reusable thumbnail builder that handles Data URLs (Base64), remote web URLs, and local device file paths
   static Widget buildThumbnail(
     String pathOrUrl, {
     double? width,
@@ -471,6 +521,27 @@ class ProductImagePicker extends StatelessWidget {
 
     if (clean.isEmpty) return defaultFallback;
 
+    // 1. Data URL (Base64) - Works on ALL platforms (Web, Android, iOS, Windows, macOS)
+    if (clean.startsWith('data:image')) {
+      try {
+        final commaIdx = clean.indexOf(',');
+        if (commaIdx != -1) {
+          final base64Data = clean.substring(commaIdx + 1);
+          final bytes = base64Decode(base64Data);
+          return Image.memory(
+            bytes,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (_, __, ___) => defaultFallback,
+          );
+        }
+      } catch (_) {
+        return defaultFallback;
+      }
+    }
+
+    // 2. HTTP/HTTPS Remote URL
     if (clean.startsWith('http://') || clean.startsWith('https://')) {
       return Image.network(
         clean,
@@ -481,18 +552,21 @@ class ProductImagePicker extends StatelessWidget {
       );
     }
 
-    try {
-      final file = File(clean);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (_, __, ___) => defaultFallback,
-        );
-      }
-    } catch (_) {}
+    // 3. Local filesystem path (Native Android/iOS/Desktop only - never invoked on Web)
+    if (!kIsWeb) {
+      try {
+        final file = io.File(clean);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (_, __, ___) => defaultFallback,
+          );
+        }
+      } catch (_) {}
+    }
 
     return defaultFallback;
   }

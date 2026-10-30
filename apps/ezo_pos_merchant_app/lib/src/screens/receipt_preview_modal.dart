@@ -8,6 +8,7 @@ import 'package:ezo_khata_upi_whatsapp/ezo_khata_upi_whatsapp.dart';
 import 'package:flutter/foundation.dart';
 import '../theme/ezo_theme.dart';
 import '../widgets/bluetooth_printer_scanner_modal.dart';
+import '../services/web_printer_helper.dart';
 
 class ReceiptPreviewModal extends StatefulWidget {
   final InvoiceDocument invoice;
@@ -300,10 +301,33 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
   }
 
   void _handlePrintEscPos() async {
+    // 1. On Web: Use universal browser system print formatted for thermal rolls
+    if (kIsWeb) {
+      final rollWidthMm = _selectedTabIndex == 1 ? 80 : 58;
+      final previewText = EscPosThermalEngine.renderReceiptAsciiPreview(
+        invoice: widget.invoice,
+        storeProfile: widget.storeProfile,
+        rollWidth: _selectedTabIndex == 1 ? ThermalRollWidth.bada80mm : ThermalRollWidth.chota58mm,
+      );
+
+      triggerWebPrintReceipt(
+        asciiReceipt: previewText,
+        invoiceNumber: widget.invoice.invoiceNumber,
+        rollWidthMm: rollWidthMm,
+      );
+
+      setState(() {
+        _isPrinting = false;
+        _printStatus = 'System Print Dialog opened! Print to any connected thermal or desktop printer.';
+      });
+      return;
+    }
+
+    // 2. On Native Mobile (Android/iOS): Transmit ESC/POS byte stream via Bluetooth driver
     final printerMgr = ThermalPrinterConnectionManager();
 
     // If not connected on Android, prompt user to select/pair printer
-    if (!printerMgr.isConnected && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    if (!printerMgr.isConnected && defaultTargetPlatform == TargetPlatform.android) {
       final shouldContinue = await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
@@ -345,7 +369,7 @@ class _ReceiptPreviewModalState extends State<ReceiptPreviewModal> {
           final printerName = printerMgr.activeDevice?.name ?? 'Thermal Printer';
           _printStatus = 'Sent ${bytes.length} ESC/POS bytes to $printerName ✅';
         } else {
-          _printStatus = 'Sent ${bytes.length} ESC/POS bytes (Simulated / Browser preview)';
+          _printStatus = 'Failed to transmit ESC/POS bytes. Check printer connection.';
         }
       });
     } catch (e) {

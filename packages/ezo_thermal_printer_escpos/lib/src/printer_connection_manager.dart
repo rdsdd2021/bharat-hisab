@@ -86,25 +86,11 @@ class VirtualMonospacePrinterDriver implements PrinterTransportDriver {
   Future<List<DiscoveredPrinterDevice>> scanDevices({bool activeDiscovery = false}) async {
     return [
       const DiscoveredPrinterDevice(
-        id: 'BT_58MM_01',
-        name: 'Bharat Chota 58mm Bluetooth',
-        connectionType: PrinterConnectionType.bluetoothSpp,
-        address: '00:11:22:33:44:55',
+        id: 'SYS_PRINT',
+        name: 'System Print / Browser Dialog (USB, BT & Desktop Printers)',
+        connectionType: PrinterConnectionType.virtualPreview,
+        address: 'browser_system_print',
         isBonded: true,
-      ),
-      const DiscoveredPrinterDevice(
-        id: 'BT_80MM_02',
-        name: 'Bharat Bada 80mm Bluetooth',
-        connectionType: PrinterConnectionType.bluetoothSpp,
-        address: '66:77:88:99:AA:BB',
-        isBonded: true,
-      ),
-      const DiscoveredPrinterDevice(
-        id: 'USB_POS_80',
-        name: 'USB Thermal Receipt Printer',
-        connectionType: PrinterConnectionType.usbOtg,
-        address: 'USB_PORT_01',
-        isBonded: false,
       ),
       const DiscoveredPrinterDevice(
         id: 'VIRTUAL_SCREEN',
