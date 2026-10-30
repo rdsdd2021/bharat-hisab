@@ -498,21 +498,27 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
         Expanded(
           child: c.filteredProducts.isEmpty
               ? _buildEmptyCatalogView(context, c)
-              : GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.74,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
-                  itemCount: c.filteredProducts.length,
-                  itemBuilder: (context, idx) {
-                    final item = c.filteredProducts[idx];
-                    final lineIdx = c.cartLines.indexWhere((l) => l.productId == item.id);
-                    final qtyInCart = lineIdx != -1 ? c.cartLines[lineIdx].quantity.toInt() : 0;
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final crossAxisCount = width >= 800 ? 4 : (width >= 520 ? 3 : 2);
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: 0.75,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: c.filteredProducts.length,
+                      itemBuilder: (context, idx) {
+                        final item = c.filteredProducts[idx];
+                        final lineIdx = c.cartLines.indexWhere((l) => l.productId == item.id);
+                        final qtyInCart = lineIdx != -1 ? c.cartLines[lineIdx].quantity.toInt() : 0;
 
-                    return _buildProductCard(item, qtyInCart, lineIdx, c);
+                        return _buildProductCard(item, qtyInCart, lineIdx, c);
+                      },
+                    );
                   },
                 ),
         ),
@@ -594,177 +600,252 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Top Row: Category Initial & Stock Badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: EzoColors.primaryLight,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+            // Prominent Top Image Banner with Stock Tag Overlay
+            Expanded(
+              flex: 5,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: EzoColors.surfaceSecondary,
                     child: item.imageUrl.isNotEmpty
                         ? ProductImagePicker.buildThumbnail(
                             item.imageUrl,
-                            width: 26,
-                            height: 26,
+                            fit: BoxFit.cover,
+                            fallback: _buildCardImageFallback(item),
                           )
-                        : Center(
-                            child: Text(
-                              item.name.isNotEmpty ? item.name[0] : 'P',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: EzoColors.primary,
-                              ),
-                            ),
-                          ),
+                        : _buildCardImageFallback(item),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: item.isOutOfStock
-                        ? EzoColors.errorBg
-                        : (item.isLowStock ? EzoColors.warningBg : EzoColors.successBg),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    item.isOutOfStock ? 'OOS' : '${item.currentStock.toInt()} in stock',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: item.isOutOfStock
-                          ? EzoColors.error
-                          : (item.isLowStock ? EzoColors.warning : EzoColors.success),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-
-            // Item Name
-            Text(
-              item.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                height: 1.25,
-                color: EzoColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-
-            // Regional Vernacular Name
-            Text(
-              item.regionalName.isNotEmpty ? item.regionalName : item.category,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10.5,
-                color: EzoColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Price & Add / Stepper Row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '₹${item.sellingPrice.toStringAsFixed(0)}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: EzoColors.primary,
-                        ),
-                      ),
-                      if (item.mrp > item.sellingPrice)
-                        Text(
-                          '₹${item.mrp.toInt()}',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            color: EzoColors.textDisabled,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Stepper or + Add Button
-                if (qtyInCart == 0)
-                  InkWell(
-                    onTap: () => c.addProductToCart(item),
-                    borderRadius: BorderRadius.circular(8),
+                  // Stock Status Badge Overlay
+                  Positioned(
+                    top: 6,
+                    right: 6,
                     child: Container(
-                      width: 32,
-                      height: 32,
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: EzoColors.primaryLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: Icon(LucideIcons.plus, size: 16, color: EzoColors.primary),
-                      ),
-                    ),
-                  )
-                else
-                  Container(
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: EzoColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        InkWell(
-                          onTap: () {
-                            if (lineIdx != -1) {
-                              c.updateCartLineQty(lineIdx, c.cartLines[lineIdx].quantity - 1);
-                            }
-                          },
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child: Icon(LucideIcons.minus, size: 13, color: Colors.white),
+                        color: item.isOutOfStock
+                            ? EzoColors.errorBg
+                            : (item.isLowStock ? EzoColors.warningBg : EzoColors.successBg),
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 3,
                           ),
+                        ],
+                      ),
+                      child: Text(
+                        item.isOutOfStock ? 'OOS' : '\ in stock',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: item.isOutOfStock
+                              ? EzoColors.error
+                              : (item.isLowStock ? EzoColors.warning : EzoColors.success),
                         ),
-                        Text(
-                          '$qtyInCart',
+                      ),
+                    ),
+                  ),
+                  if (item.category.isNotEmpty)
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          item.category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
                         ),
-                        InkWell(
-                          onTap: () => c.addProductToCart(item),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child: Icon(LucideIcons.plus, size: 13, color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Bottom Product Details & Stepper Row
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                            height: 1.2,
+                            color: EzoColors.textPrimary,
                           ),
                         ),
+                        if (item.regionalName.isNotEmpty)
+                          Text(
+                            item.regionalName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: EzoColors.textMuted,
+                            ),
+                          ),
                       ],
                     ),
+
+                    // Price & Add / Stepper Row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '₹',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: EzoColors.primary,
+                                ),
+                              ),
+                              if (item.mrp > item.sellingPrice)
+                                Text(
+                                  '₹',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    color: EzoColors.textDisabled,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        // Stepper or + Add Button
+                        if (qtyInCart == 0)
+                          InkWell(
+                            onTap: () => c.addProductToCart(item),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: EzoColors.primaryLight,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: Icon(LucideIcons.plus, size: 16, color: EzoColors.primary),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: EzoColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    if (lineIdx != -1) {
+                                      c.updateCartLineQty(lineIdx, c.cartLines[lineIdx].quantity - 1);
+                                    }
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 6),
+                                    child: Icon(LucideIcons.minus, size: 12, color: Colors.white),
+                                  ),
+                                ),
+                                Text(
+                                  '',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () => c.addProductToCart(item),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 6),
+                                    child: Icon(LucideIcons.plus, size: 12, color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardImageFallback(ProductItem item) {
+    return Container(
+      color: EzoColors.primaryLight.withValues(alpha: 0.35),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: EzoColors.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  item.name.isNotEmpty ? item.name[0].toUpperCase() : 'P',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: EzoColors.primary,
                   ),
-              ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              item.category.isNotEmpty ? item.category : 'General',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: EzoColors.textMuted,
+              ),
             ),
           ],
         ),
@@ -1067,6 +1148,33 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Row(
                           children: [
+                            // Product Image Thumbnail
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                color: EzoColors.surfaceSecondary,
+                                child: (prod != null && prod.imageUrl.isNotEmpty)
+                                    ? ProductImagePicker.buildThumbnail(
+                                        prod.imageUrl,
+                                        width: 34,
+                                        height: 34,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          prodName.isNotEmpty ? prodName[0].toUpperCase() : 'P',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: EzoColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -521,18 +521,19 @@ class ProductImagePicker extends StatelessWidget {
 
     if (clean.isEmpty) return defaultFallback;
 
-    // 1. Data URL (Base64) - Works on ALL platforms (Web, Android, iOS, Windows, macOS)
-    if (clean.startsWith('data:image')) {
+    // 1. Data URL (Base64) - Handles all MIME types (image/jpeg, image/png, image/webp, application/octet-stream, etc.)
+    if (clean.startsWith('data:') && clean.contains('base64,')) {
       try {
         final commaIdx = clean.indexOf(',');
         if (commaIdx != -1) {
-          final base64Data = clean.substring(commaIdx + 1);
+          final base64Data = clean.substring(commaIdx + 1).replaceAll(RegExp(r'\s+'), '');
           final bytes = base64Decode(base64Data);
           return Image.memory(
             bytes,
             width: width,
             height: height,
             fit: fit,
+            gaplessPlayback: true,
             errorBuilder: (_, __, ___) => defaultFallback,
           );
         }
@@ -541,18 +542,35 @@ class ProductImagePicker extends StatelessWidget {
       }
     }
 
-    // 2. HTTP/HTTPS Remote URL
-    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    // 2. Raw Base64 string without data: prefix
+    if (!clean.startsWith('http') && !clean.startsWith('blob:') && !clean.startsWith('file:') && !clean.contains('/') && !clean.contains('\\') && clean.length > 50) {
+      try {
+        final sanitized = clean.replaceAll(RegExp(r'\s+'), '');
+        final bytes = base64Decode(sanitized);
+        return Image.memory(
+          bytes,
+          width: width,
+          height: height,
+          fit: fit,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => defaultFallback,
+        );
+      } catch (_) {}
+    }
+
+    // 3. HTTP, HTTPS, or Web Blob URL
+    if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('blob:')) {
       return Image.network(
         clean,
         width: width,
         height: height,
         fit: fit,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => defaultFallback,
       );
     }
 
-    // 3. Local filesystem path (Native Android/iOS/Desktop only - never invoked on Web)
+    // 4. Local filesystem path (Native Android/iOS/Desktop only - never invoked on Web)
     if (!kIsWeb) {
       try {
         final file = io.File(clean);
@@ -562,6 +580,7 @@ class ProductImagePicker extends StatelessWidget {
             width: width,
             height: height,
             fit: fit,
+            gaplessPlayback: true,
             errorBuilder: (_, __, ___) => defaultFallback,
           );
         }
