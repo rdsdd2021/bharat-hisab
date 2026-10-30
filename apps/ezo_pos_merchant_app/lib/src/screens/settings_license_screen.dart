@@ -765,6 +765,38 @@ class _SettingsLicenseScreenState extends State<SettingsLicenseScreen> {
   }
 
   void _showAddStaffDialog(BuildContext context) {
+    final license = widget.repository.getActiveLicense();
+    final staffList = widget.repository.getAllStaff();
+    final maxSeats = license?.maxStaffSeats ?? 5;
+    if (staffList.length >= maxSeats) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: EzoColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Row(
+            children: [
+              const Icon(LucideIcons.shieldAlert, color: EzoColors.warning, size: 22),
+              const SizedBox(width: 8),
+              Text('Staff Seat Limit Reached', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16)),
+            ],
+          ),
+          content: Text(
+            'Your current license tier allows up to \ staff seats (\ currently active).\n\nTo add additional cashiers or managers, upgrade your commercial license key via the Superadmin Control Tower.',
+            style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textSecondary, height: 1.4),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: EzoColors.primary, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Understood'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final pinCtrl = TextEditingController(text: '1234');

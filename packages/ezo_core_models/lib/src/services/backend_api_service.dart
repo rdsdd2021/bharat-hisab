@@ -15,6 +15,7 @@ class AuthResult {
   final String? token;
   final BusinessProfile? profile;
   final StaffMember? staff;
+  final List<StaffMember> initialStaffList;
   final MerchantLicenseKey? license;
   final List<ProductItem> initialProducts;
   final List<PartyAccount> initialParties;
@@ -27,6 +28,7 @@ class AuthResult {
     this.token,
     this.profile,
     this.staff,
+    this.initialStaffList = const [],
     this.license,
     this.initialProducts = const [],
     this.initialParties = const [],
@@ -168,11 +170,16 @@ class BackendApiService {
             .map((k) => KhataLedgerEntry.fromJson(k as Map<String, dynamic>))
             .toList();
 
+        final allStaff = (data['allStaff'] as List<dynamic>? ?? [])
+            .map((s) => StaffMember.fromJson(s as Map<String, dynamic>))
+            .toList();
+
         return AuthResult(
           success: true,
           token: data['token'] as String?,
           profile: profile,
           staff: staff,
+          initialStaffList: allStaff,
           license: license,
           initialProducts: products,
           initialParties: parties,

@@ -67,7 +67,11 @@ class _MainShellLayoutState extends State<MainShellLayout> {
             cashier: widget.initialStaff,
           ),
           OnlineDukanDhandaScreen(repository: widget.repository, storeProfile: _activeProfile),
-          ReportsHubScreen(repository: widget.repository, storeProfile: _activeProfile),
+          ReportsHubScreen(
+            repository: widget.repository,
+            storeProfile: _activeProfile,
+            cashier: widget.initialStaff,
+          ),
           SettingsLicenseScreen(
             repository: widget.repository,
             storeProfile: _activeProfile,

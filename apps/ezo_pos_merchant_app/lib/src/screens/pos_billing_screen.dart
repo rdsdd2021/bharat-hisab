@@ -2689,6 +2689,7 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
     InvoiceLineItem line,
   ) {
     final canEdit = c.currentStaff?.canEditPrices ?? true;
+    final canGiveDiscounts = c.currentStaff?.canGiveDiscounts ?? true;
     if (!canEdit) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -2747,9 +2748,10 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: discountCtrl,
+                  enabled: canGiveDiscounts,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Line Discount Amount (₹)',
+                  decoration: InputDecoration(
+                    labelText: canGiveDiscounts ? 'Line Discount Amount (₹)' : 'Line Discount (Role Prohibited)',
                     prefixText: '₹ ',
                     hintText: '0.00',
                   ),

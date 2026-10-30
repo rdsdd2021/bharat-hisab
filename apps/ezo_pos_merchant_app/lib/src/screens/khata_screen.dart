@@ -1070,6 +1070,16 @@ class _KhataScreenState extends State<KhataScreen> with SingleTickerProviderStat
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: EzoColors.success, foregroundColor: Colors.white),
               onPressed: () async {
+                if (!widget.cashier.canCollectUdhaar) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('⚠️ Your staff role does not have permission to collect Udhaar payments.'),
+                      backgroundColor: EzoColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
                 final amt = double.tryParse(amtCtrl.text) ?? 0.0;
                 if (amt > 0) {
                   final receiptMsg = await _khataService.recordCustomerPayment(

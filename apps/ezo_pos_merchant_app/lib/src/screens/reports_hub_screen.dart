@@ -11,11 +11,13 @@ import '../theme/ezo_theme.dart';
 class ReportsHubScreen extends StatefulWidget {
   final EzoOfflineRepository repository;
   final BusinessProfile storeProfile;
+  final StaffMember? cashier;
 
   const ReportsHubScreen({
     super.key,
     required this.repository,
     required this.storeProfile,
+    this.cashier,
   });
 
   @override
@@ -784,9 +786,10 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
                     },
                   ),
                   const SizedBox(width: 6),
-                  IconButton(
-                    icon: const Icon(LucideIcons.trash2, color: EzoColors.error),
-                    tooltip: 'Void / Cancel Invoice',
+                  if (widget.cashier?.canDeleteBills ?? true)
+                    IconButton(
+                      icon: const Icon(LucideIcons.trash2, color: EzoColors.error),
+                      tooltip: 'Void / Cancel Invoice',
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
@@ -1057,6 +1060,39 @@ class _ReportsHubScreenState extends State<ReportsHubScreen> with SingleTickerPr
   }
 
   Widget _buildPnlTab() {
+    final canViewProfit = widget.cashier?.canViewProfitReports ?? true;
+    if (!canViewProfit) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: EzoColors.warning.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.lock, color: EzoColors.warning, size: 28),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Profit & Loss Reports Restricted',
+                style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: EzoColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Your staff role (\) does not have permission to view store margins and profit data.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: EzoColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final now = DateTime.now();
     final pnl = EzoReportEngine.generateProfitAndLoss(
       sales: widget.repository.getAllInvoices().where((i) => !i.isCancelled).toList(),

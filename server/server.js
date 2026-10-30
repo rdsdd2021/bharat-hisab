@@ -343,12 +343,27 @@ app.post('/api/v1/auth/login', (req, res) => {
         phone: matchedStaff.phone,
         role: matchedStaff.role,
         pinCode: pin,
-        canEditPrices: matchedStaff.canEditPrices,
-        canGiveDiscounts: matchedStaff.canGiveDiscounts,
-        canViewProfits: matchedStaff.canViewProfits,
-        canDeleteBills: matchedStaff.canDeleteBills,
-        canCollectUdhaar: matchedStaff.canCollectUdhaar,
+        canEditPrices: !!matchedStaff.canEditPrices,
+        canGiveDiscounts: matchedStaff.canGiveDiscounts !== false,
+        canDeleteBills: !!matchedStaff.canDeleteBills,
+        canViewProfitReports: !!matchedStaff.canViewProfitReports || !!matchedStaff.canViewProfits,
+        canCollectUdhaar: matchedStaff.canCollectUdhaar !== false,
+        isActive: matchedStaff.isActive !== false,
       },
+      allStaff: Object.values(db.staff || {}).filter(s => s.storeProfileId === matchedMerchant.id).map(s => ({
+        id: s.id,
+        storeProfileId: s.storeProfileId,
+        fullName: s.fullName,
+        phone: s.phone,
+        pinCode: s.pinCode || '',
+        role: s.role,
+        canEditPrices: !!s.canEditPrices,
+        canGiveDiscounts: s.canGiveDiscounts !== false,
+        canDeleteBills: !!s.canDeleteBills,
+        canViewProfitReports: !!s.canViewProfitReports || !!s.canViewProfits,
+        canCollectUdhaar: s.canCollectUdhaar !== false,
+        isActive: s.isActive !== false,
+      })),
       license: matchedMerchant.license,
       // Initial bundle of merchant data
       products: db.products[matchedMerchant.id] || [],
@@ -419,6 +434,37 @@ app.post('/api/v1/sync/push', (req, res) => {
         if (idx !== -1) list[idx] = payload;
         else list.push(payload);
         processedCount++;
+      } else if (entityType === 'staff') {
+        if (!db.staff) db.staff = {};
+        if (operation === 'delete') {
+          delete db.staff[payload.id];
+        } else {
+          let pinHash = payload.pinHash;
+          let pinSalt = payload.pinSalt;
+          if (payload.pinCode && (!pinHash || pinHash === payload.pinCode)) {
+            pinSalt = crypto.randomBytes(16).toString('hex');
+            pinHash = hashPin(payload.pinCode, pinSalt);
+          }
+          db.staff[payload.id] = {
+            id: payload.id,
+            storeProfileId: merchantId,
+            fullName: payload.fullName || payload.name || '',
+            phone: payload.phone || '',
+            pinCode: payload.pinCode || '1234',
+            pinHash: pinHash || '',
+            pinSalt: pinSalt || '',
+            role: payload.role || 'counterCashier',
+            canEditPrices: !!payload.canEditPrices,
+            canGiveDiscounts: payload.canGiveDiscounts !== false,
+            canDeleteBills: !!payload.canDeleteBills,
+            canViewProfitReports: !!payload.canViewProfitReports || !!payload.canViewProfits,
+            canCollectUdhaar: payload.canCollectUdhaar !== false,
+            isActive: payload.isActive !== false,
+            createdAt: payload.createdAt || now,
+            lastActiveAt: now,
+          };
+        }
+        processedCount++;
       }
     }
 
@@ -453,6 +499,8 @@ app.get('/api/v1/sync/pull', (req, res) => {
       return res.status(404).json({ error: 'Merchant not found.' });
     }
 
+    const merchantStaff = Object.values(db.staff || {}).filter(s => s.storeProfileId === merchantId);
+
     res.json({
       success: true,
       serverTimestamp: new Date().toISOString(),
@@ -460,6 +508,7 @@ app.get('/api/v1/sync/pull', (req, res) => {
       parties: db.parties[merchantId] || [],
       invoices: db.invoices[merchantId] || [],
       khataEntries: db.khataEntries[merchantId] || [],
+      staff: merchantStaff,
     });
   } catch (err) {
     console.error('[SYNC PULL ERROR]', err);

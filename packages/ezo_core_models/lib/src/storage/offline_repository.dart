@@ -195,6 +195,9 @@ class EzoOfflineRepository {
       if (result.license != null) {
         await db.saveLicense(result.license!);
       }
+      for (final sm in result.initialStaffList) {
+        await db.saveStaffMember(sm);
+      }
     }
     return result;
   }
@@ -209,6 +212,9 @@ class EzoOfflineRepository {
       await db.saveStaffMember(result.staff!);
       if (result.license != null) {
         await db.saveLicense(result.license!);
+      }
+      for (final sm in result.initialStaffList) {
+        await db.saveStaffMember(sm);
       }
       if (result.initialProducts.isNotEmpty) {
         await db.saveProductsBatch(result.initialProducts);
@@ -249,6 +255,12 @@ class EzoOfflineRepository {
             .toList();
         if (products.isNotEmpty) {
           await db.saveProductsBatch(products);
+        }
+        final staff = (updates['staff'] as List<dynamic>? ?? [])
+            .map((s) => StaffMember.fromJson(s as Map<String, dynamic>))
+            .toList();
+        for (final s in staff) {
+          await db.saveStaffMember(s);
         }
       }
       return true;

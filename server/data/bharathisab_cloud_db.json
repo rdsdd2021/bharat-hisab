@@ -61,6 +61,37 @@
         "isDhandaAiEnabled": true,
         "isOnlineDukanEnabled": true
       }
+    },
+    "m_1793378611271_97928c30": {
+      "id": "m_1793378611271_97928c30",
+      "storeName": "Sunny Store",
+      "legalEntityName": "Sunny Store Retail",
+      "gstin": "19AABCB1234D1Z5",
+      "stateCode": "19",
+      "stateName": "West Bengal",
+      "address": "Main Market Road",
+      "phone": "8989898989",
+      "email": "8989898989@bharathisab.com",
+      "upiId": "8989898989@upi",
+      "isGstRegistered": true,
+      "industryVertical": "kiranaGrocery",
+      "createdAt": "2026-10-30T16:43:31.318Z",
+      "lastActiveAt": "2026-10-30T16:43:31.318Z",
+      "ownerName": "Sunny",
+      "pinHash": "2168bf3bf709b754e37ab749fc015b149590f9745e53cbeaa0a79bb6ac3b21c6",
+      "pinSalt": "fba4fd3c859f0cb849416cf325587b00",
+      "license": {
+        "key": "BH-PRO-1793378611319",
+        "merchantId": "m_1793378611271_97928c30",
+        "storeName": "Sunny Store",
+        "tier": "threeYearPro",
+        "issuedAt": "2026-10-30T16:43:31.318Z",
+        "expiresAt": "2029-10-29T16:43:31.319Z",
+        "maxAllowedStores": 3,
+        "maxStaffSeats": 5,
+        "isDhandaAiEnabled": true,
+        "isOnlineDukanEnabled": true
+      }
     }
   },
   "staff": {
@@ -99,23 +130,45 @@
       "lastActiveAt": "2026-10-27T21:34:09.246Z",
       "pinHash": "e9b5c43b3763879a78cb90af1a0843e796c7a94a064607414e8ce1f3b6a0547a",
       "pinSalt": "f1438697489959fd6d219c431a0c4863"
+    },
+    "staff_owner_m_1793378611271_97928c30": {
+      "id": "staff_owner_m_1793378611271_97928c30",
+      "storeProfileId": "m_1793378611271_97928c30",
+      "fullName": "Sunny",
+      "phone": "8989898989",
+      "role": "admin",
+      "pinCode": "1234",
+      "canEditPrices": true,
+      "canGiveDiscounts": true,
+      "canViewProfits": true,
+      "canDeleteBills": true,
+      "canCollectUdhaar": true,
+      "isActive": true,
+      "createdAt": "2026-10-30T16:43:31.318Z",
+      "lastActiveAt": "2026-10-30T16:43:31.318Z",
+      "pinHash": "2168bf3bf709b754e37ab749fc015b149590f9745e53cbeaa0a79bb6ac3b21c6",
+      "pinSalt": "fba4fd3c859f0cb849416cf325587b00"
     }
   },
   "products": {
     "m_1793134720415_e3d28b14": [],
-    "m_1793136803839_2bf0cf0d": []
+    "m_1793136803839_2bf0cf0d": [],
+    "m_1793378611271_97928c30": []
   },
   "parties": {
     "m_1793134720415_e3d28b14": [],
-    "m_1793136803839_2bf0cf0d": []
+    "m_1793136803839_2bf0cf0d": [],
+    "m_1793378611271_97928c30": []
   },
   "invoices": {
     "m_1793134720415_e3d28b14": [],
-    "m_1793136803839_2bf0cf0d": []
+    "m_1793136803839_2bf0cf0d": [],
+    "m_1793378611271_97928c30": []
   },
   "khataEntries": {
     "m_1793134720415_e3d28b14": [],
-    "m_1793136803839_2bf0cf0d": []
+    "m_1793136803839_2bf0cf0d": [],
+    "m_1793378611271_97928c30": []
   },
   "licenses": {
     "BH-PRO-1793134720418": {
@@ -141,6 +194,18 @@
       "maxStaffSeats": 5,
       "isDhandaAiEnabled": true,
       "isOnlineDukanEnabled": true
+    },
+    "BH-PRO-1793378611319": {
+      "key": "BH-PRO-1793378611319",
+      "merchantId": "m_1793378611271_97928c30",
+      "storeName": "Sunny Store",
+      "tier": "threeYearPro",
+      "issuedAt": "2026-10-30T16:43:31.318Z",
+      "expiresAt": "2029-10-29T16:43:31.319Z",
+      "maxAllowedStores": 3,
+      "maxStaffSeats": 5,
+      "isDhandaAiEnabled": true,
+      "isOnlineDukanEnabled": true
     }
   },
   "telemetry": {
@@ -154,6 +219,14 @@
     },
     "m_1793136803839_2bf0cf0d": {
       "lastHeartbeat": "2026-10-27T21:34:09.246Z",
+      "terminalIp": "127.0.0.1",
+      "appVersion": "1.0.0",
+      "syncCount": 0,
+      "totalSales": 0,
+      "totalInvoices": 0
+    },
+    "m_1793378611271_97928c30": {
+      "lastHeartbeat": "2026-10-30T16:43:31.318Z",
       "terminalIp": "127.0.0.1",
       "appVersion": "1.0.0",
       "syncCount": 0,

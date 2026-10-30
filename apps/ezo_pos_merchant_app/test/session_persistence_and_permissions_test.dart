@@ -327,4 +327,76 @@ void main() {
       expect(granted, isTrue);
     });
   });
+
+
+  group('Staff Management & RBAC Permissions Tests', () {
+    test('StaffMember model supports roles and granular permission flags', () {
+      final cashier = StaffMember(
+        id: 'staff_cashier_1',
+        storeProfileId: 'store_1',
+        fullName: 'Ramesh Cashier',
+        phone: '9876543211',
+        pinCode: '4321',
+        role: StaffRole.counterCashier,
+        canEditPrices: false,
+        canGiveDiscounts: false,
+        canDeleteBills: false,
+        canViewProfitReports: false,
+        canCollectUdhaar: false,
+      );
+
+      expect(cashier.role, equals(StaffRole.counterCashier));
+      expect(cashier.canEditPrices, isFalse);
+      expect(cashier.canGiveDiscounts, isFalse);
+      expect(cashier.canDeleteBills, isFalse);
+      expect(cashier.canViewProfitReports, isFalse);
+      expect(cashier.canCollectUdhaar, isFalse);
+
+      final manager = cashier.copyWith(
+        role: StaffRole.storeManager,
+        canEditPrices: true,
+        canGiveDiscounts: true,
+        canCollectUdhaar: true,
+      );
+
+      expect(manager.role, equals(StaffRole.storeManager));
+      expect(manager.canEditPrices, isTrue);
+      expect(manager.canGiveDiscounts, isTrue);
+      expect(manager.canCollectUdhaar, isTrue);
+      expect(manager.canDeleteBills, isFalse);
+    });
+
+    test('LocalDatabase persists staff member and generates outbox sync mutation', () async {
+      final db = LocalDatabase();
+      await db.initialize();
+      final repo = EzoOfflineRepository(db: db);
+
+      final newStaff = StaffMember(
+        id: 'staff_test_99',
+        storeProfileId: 'store_test',
+        fullName: 'Pooja Verma',
+        phone: '9820011223',
+        pinCode: '9988',
+        role: StaffRole.counterCashier,
+        canEditPrices: false,
+        canGiveDiscounts: true,
+      );
+
+      await repo.saveStaff(newStaff);
+
+      final fetched = repo.getStaff('staff_test_99');
+      expect(fetched, isNotNull);
+      expect(fetched!.fullName, equals('Pooja Verma'));
+      expect(fetched.phone, equals('9820011223'));
+      expect(fetched.pinCode, equals('9988'));
+
+      // Check pending outbox sync
+      final pending = repo.getPendingSync();
+      expect(pending.any((s) => s.entityType == 'staff' && s.entityId == 'staff_test_99'), isTrue);
+
+      // Verify deletion
+      await repo.deleteStaff('staff_test_99');
+      expect(repo.getStaff('staff_test_99'), isNull);
+    });
+  });
 }
