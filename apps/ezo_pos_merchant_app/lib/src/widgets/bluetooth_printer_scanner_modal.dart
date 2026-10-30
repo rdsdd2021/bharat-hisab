@@ -5,6 +5,7 @@ import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 import '../theme/ezo_theme.dart';
 import '../theme/google_fonts.dart';
 import '../services/hardware_permission_service.dart';
+import '../services/android_bluetooth_printer_driver.dart';
 
 class BluetoothPrinterScannerModal extends StatefulWidget {
   final VoidCallback? onPrinterConnected;
@@ -34,14 +35,25 @@ class _BluetoothPrinterScannerModalState extends State<BluetoothPrinterScannerMo
   String? _connectingAddress;
   String _statusMessage = '';
 
+  bool _isBluetoothEnabled = true;
+
   @override
   void initState() {
     super.initState();
     HardwarePermissionService.ensureBluetoothPermission();
+    _checkBluetoothState();
     _loadPairedPrinters();
   }
 
+  Future<void> _checkBluetoothState() async {
+    final enabled = await AndroidBluetoothPrinterDriver.isBluetoothEnabled();
+    if (mounted) {
+      setState(() => _isBluetoothEnabled = enabled);
+    }
+  }
+
   Future<void> _loadPairedPrinters({bool activeDiscovery = false}) async {
+    await _checkBluetoothState();
     setState(() {
       _isScanning = true;
       _statusMessage = activeDiscovery ? 'Searching for nearby Bluetooth devices...' : 'Loading paired printers...';
@@ -220,6 +232,46 @@ class _BluetoothPrinterScannerModalState extends State<BluetoothPrinterScannerMo
           ),
           const SizedBox(height: 10),
 
+          // Bluetooth Off Alert Banner
+          if (!_isBluetoothEnabled) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFF59E0B)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.bluetoothOff, color: Color(0xFFD97706), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Bluetooth is turned OFF on your phone.',
+                      style: GoogleFonts.plusJakartaSans(color: const Color(0xFF92400E), fontSize: 11.5, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      minimumSize: const Size(60, 30),
+                    ),
+                    onPressed: () async {
+                      await AndroidBluetoothPrinterDriver.requestEnableBluetooth();
+                      await Future.delayed(const Duration(milliseconds: 800));
+                      await _checkBluetoothState();
+                      _loadPairedPrinters();
+                    },
+                    child: const Text('Turn ON', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
           // Active Connection Status Card
           if (isConnected && activeDevice != null) ...[
             Container(
@@ -347,6 +399,20 @@ class _BluetoothPrinterScannerModalState extends State<BluetoothPrinterScannerMo
                           '1. Turn ON your 58mm / 80mm thermal printer.\n2. Pair it once in phone Settings -> Bluetooth.\n3. Tap "Scan Paired Devices" above.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(fontSize: 11, color: EzoColors.textMuted),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          icon: const Icon(LucideIcons.settings, size: 14),
+                          label: const Text('Open Phone Bluetooth Settings (Pair)'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF2563EB),
+                            side: const BorderSide(color: Color(0xFF2563EB)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () async {
+                            await AndroidBluetoothPrinterDriver.openBluetoothSettings();
+                          },
                         ),
                       ],
                     ),

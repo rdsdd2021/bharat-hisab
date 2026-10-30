@@ -6,6 +6,33 @@ import 'package:ezo_thermal_printer_escpos/ezo_thermal_printer_escpos.dart';
 class AndroidBluetoothPrinterDriver implements PrinterTransportDriver {
   static const MethodChannel _channel = MethodChannel('com.bharathisab.pos/bluetooth_printer');
 
+  /// Check if Bluetooth radio is enabled on the device
+  static Future<bool> isBluetoothEnabled() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
+    try {
+      final res = await _channel.invokeMethod<bool>('isBluetoothEnabled');
+      return res ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Request the user to turn on Bluetooth via system dialog
+  static Future<void> requestEnableBluetooth() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _channel.invokeMethod('requestEnableBluetooth');
+    } catch (_) {}
+  }
+
+  /// Open Android OS Bluetooth Settings page directly to pair printers/scales
+  static Future<void> openBluetoothSettings() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _channel.invokeMethod('openBluetoothSettings');
+    } catch (_) {}
+  }
+
   static const List<DiscoveredPrinterDevice> _virtualFallbacks = [
     DiscoveredPrinterDevice(
       id: 'SYS_PRINT',

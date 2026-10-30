@@ -19,6 +19,15 @@ class AndroidWeighingScaleDriver implements WeighingScaleDriver {
   static const MethodChannel _channel = MethodChannel('com.bharathisab.pos/weighing_scale');
   static const EventChannel _streamChannel = EventChannel('com.bharathisab.pos/weighing_scale_stream');
 
+  /// Open Android OS Bluetooth Settings page directly to pair scales
+  static Future<void> openBluetoothSettings() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      const printerChannel = MethodChannel('com.bharathisab.pos/bluetooth_printer');
+      await printerChannel.invokeMethod('openBluetoothSettings');
+    } catch (_) {}
+  }
+
   bool _connected = false;
   WeighingScaleReading _latestReading = WeighingScaleReading.zero();
   StreamSubscription? _rawSubscription;

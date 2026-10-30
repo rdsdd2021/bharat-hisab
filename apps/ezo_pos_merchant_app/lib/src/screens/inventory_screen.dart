@@ -408,19 +408,10 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: p.imageUrl.isNotEmpty
-                                    ? Image.network(
+                                    ? ProductImagePicker.buildThumbnail(
                                         p.imageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Center(
-                                          child: Text(
-                                            p.category.isNotEmpty ? p.category[0].toUpperCase() : 'P',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 14,
-                                              color: EzoColors.primary,
-                                            ),
-                                          ),
-                                        ),
+                                        width: 38,
+                                        height: 38,
                                       )
                                     : Center(
                                         child: Text(

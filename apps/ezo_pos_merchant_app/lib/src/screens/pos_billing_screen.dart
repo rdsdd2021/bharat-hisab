@@ -613,19 +613,10 @@ class _PosBillingScreenState extends State<PosBillingScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: item.imageUrl.isNotEmpty
-                        ? Image.network(
+                        ? ProductImagePicker.buildThumbnail(
                             item.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
-                              child: Text(
-                                item.name.isNotEmpty ? item.name[0] : 'P',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: EzoColors.primary,
-                                ),
-                              ),
-                            ),
+                            width: 26,
+                            height: 26,
                           )
                         : Center(
                             child: Text(

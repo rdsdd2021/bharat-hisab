@@ -475,10 +475,27 @@ class _WeighingScaleModalState extends State<WeighingScaleModal> with SingleTick
         Expanded(
           child: btDevices.isEmpty
               ? Center(
-                  child: Text(
-                    'No Bluetooth scales paired.\nPair your Essae or Phoenix scale in phone Bluetooth settings.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, color: EzoColors.textMuted),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'No Bluetooth scales paired.\nPair your Essae, Phoenix, or weighing scale in phone settings.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 12, color: EzoColors.textMuted),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        icon: const Icon(LucideIcons.settings, size: 13),
+                        label: const Text('Open Phone Bluetooth Settings (Pair)'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: EzoColors.primary,
+                          side: const BorderSide(color: EzoColors.primary),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          textStyle: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                        onPressed: () => AndroidWeighingScaleDriver.openBluetoothSettings(),
+                      ),
+                    ],
                   ),
                 )
               : ListView.separated(

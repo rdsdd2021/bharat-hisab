@@ -3,6 +3,7 @@ package com.example.ezo_pos_merchant_app
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -12,6 +13,8 @@ import android.content.pm.PackageManager
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
+import android.provider.Settings
+import android.util.Log
 import androidx.annotation.NonNull
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -37,9 +40,11 @@ class MainActivity : FlutterActivity() {
 
     private var pendingPermissionResult: MethodChannel.Result? = null
 
-    private val bluetoothAdapter: BluetoothAdapter? by lazy {
-        BluetoothAdapter.getDefaultAdapter()
-    }
+    private val bluetoothAdapter: BluetoothAdapter?
+        get() {
+            val manager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+            return manager?.adapter ?: BluetoothAdapter.getDefaultAdapter()
+        }
 
     private val usbManager: UsbManager? by lazy {
         getSystemService(Context.USB_SERVICE) as? UsbManager
@@ -57,15 +62,63 @@ class MainActivity : FlutterActivity() {
     private var isScaleReading = false
     private var scaleEventSink: EventChannel.EventSink? = null
 
+    /**
+     * Connects to a Bluetooth device with a 4-tier fallback strategy:
+     * 1. Standard SDP RFCOMM (SPP UUID)
+     * 2. Reflection channel 1 (standard for 99% of ESC/POS thermal printers)
+     * 3. Insecure RFCOMM SDP
+     * 4. Reflection insecure channel 1
+     */
+    private fun connectRfcommWithFallback(device: BluetoothDevice): BluetoothSocket {
+        // Tier 1: Standard SDP RFCOMM
+        try {
+            val socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
+            socket.connect()
+            Log.i("POS_BT", "Successfully connected via standard SPP UUID: ${device.address}")
+            return socket
+        } catch (e1: Exception) {
+            Log.w("POS_BT", "Standard SPP connect failed (${e1.message}), trying reflection channel 1 fallback...")
+        }
+
+        // Tier 2: Reflection channel 1
+        try {
+            val method = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
+            val socket = method.invoke(device, 1) as BluetoothSocket
+            socket.connect()
+            Log.i("POS_BT", "Successfully connected via reflection channel 1: ${device.address}")
+            return socket
+        } catch (e2: Exception) {
+            Log.w("POS_BT", "Reflection channel 1 failed (${e2.message}), trying insecure SDP...")
+        }
+
+        // Tier 3: Insecure SDP
+        try {
+            val socket = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
+            socket.connect()
+            Log.i("POS_BT", "Successfully connected via insecure SPP: ${device.address}")
+            return socket
+        } catch (e3: Exception) {
+            Log.w("POS_BT", "Insecure SPP connect failed (${e3.message}), trying insecure reflection channel 1...")
+        }
+
+        // Tier 4: Insecure reflection channel 1
+        val methodInsecure = device.javaClass.getMethod("createInsecureRfcommSocket", Int::class.javaPrimitiveType)
+        val socket = methodInsecure.invoke(device, 1) as BluetoothSocket
+        socket.connect()
+        Log.i("POS_BT", "Successfully connected via insecure reflection channel 1: ${device.address}")
+        return socket
+    }
+
     private fun getRequiredPermissions(): Array<String> {
         val list = mutableListOf<String>()
         list.add(Manifest.permission.CAMERA)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             list.add(Manifest.permission.BLUETOOTH_SCAN)
             list.add(Manifest.permission.BLUETOOTH_CONNECT)
-        } else {
-            list.add(Manifest.permission.ACCESS_FINE_LOCATION)
-            list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        list.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             list.add(Manifest.permission.BLUETOOTH)
             list.add(Manifest.permission.BLUETOOTH_ADMIN)
         }
@@ -77,9 +130,10 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             list.add(Manifest.permission.BLUETOOTH_SCAN)
             list.add(Manifest.permission.BLUETOOTH_CONNECT)
-        } else {
-            list.add(Manifest.permission.ACCESS_FINE_LOCATION)
-            list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        list.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             list.add(Manifest.permission.BLUETOOTH)
             list.add(Manifest.permission.BLUETOOTH_ADMIN)
         }
@@ -189,6 +243,8 @@ class MainActivity : FlutterActivity() {
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             bluetoothAdapter?.cancelDiscovery()
+                            kotlinx.coroutines.delay(150)
+
                             val device = bluetoothAdapter?.getRemoteDevice(address)
                             if (device == null) {
                                 withContext(Dispatchers.Main) {
@@ -203,8 +259,7 @@ class MainActivity : FlutterActivity() {
                                 activeSocket?.close()
                             } catch (ignored: Exception) {}
 
-                            val socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
-                            socket.connect()
+                            val socket = connectRfcommWithFallback(device)
 
                             activeSocket = socket
                             outputStream = socket.outputStream
@@ -225,6 +280,30 @@ class MainActivity : FlutterActivity() {
                     }
                 }
 
+                "openBluetoothSettings" -> {
+                    try {
+                        val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("INTENT_ERROR", e.localizedMessage, null)
+                    }
+                }
+
+                "requestEnableBluetooth" -> {
+                    try {
+                        if (bluetoothAdapter?.isEnabled == false) {
+                            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(intent)
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("ENABLE_ERROR", e.localizedMessage, null)
+                    }
+                }
+
                 "sendBytes" -> {
                     val bytes = call.argument<ByteArray>("bytes")
                     if (bytes == null) {
@@ -241,8 +320,18 @@ class MainActivity : FlutterActivity() {
 
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
-                            stream.write(bytes)
-                            stream.flush()
+                            // Chunked byte transmission (512B) prevents small thermal buffer overflows
+                            val chunkSize = 512
+                            var offset = 0
+                            while (offset < bytes.size) {
+                                val len = minOf(chunkSize, bytes.size - offset)
+                                stream.write(bytes, offset, len)
+                                stream.flush()
+                                offset += len
+                                if (offset < bytes.size) {
+                                    kotlinx.coroutines.delay(8)
+                                }
+                            }
                             withContext(Dispatchers.Main) {
                                 result.success(true)
                             }
@@ -345,6 +434,8 @@ class MainActivity : FlutterActivity() {
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             bluetoothAdapter?.cancelDiscovery()
+                            kotlinx.coroutines.delay(150)
+
                             val device = bluetoothAdapter?.getRemoteDevice(address)
                             if (device == null) {
                                 withContext(Dispatchers.Main) {
@@ -361,8 +452,7 @@ class MainActivity : FlutterActivity() {
                                 scaleSocket?.close()
                             } catch (ignored: Exception) {}
 
-                            val socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
-                            socket.connect()
+                            val socket = connectRfcommWithFallback(device)
 
                             scaleSocket = socket
                             scaleInputStream = socket.inputStream

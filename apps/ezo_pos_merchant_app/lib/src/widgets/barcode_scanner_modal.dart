@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../theme/ezo_theme.dart';
 import '../theme/google_fonts.dart';
 import '../services/hardware_permission_service.dart';
@@ -47,6 +49,10 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
   String _hardwareScanBuffer = '';
   DateTime? _lastKeyStrokeTime;
 
+  MobileScannerController? _scannerController;
+  bool _isScannerInitialized = false;
+  bool _hasDetected = false;
+
   late AnimationController _animCtrl;
   late Animation<double> _laserAnim;
 
@@ -54,6 +60,18 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
   void initState() {
     super.initState();
     HardwarePermissionService.ensureCameraPermission();
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      try {
+        _scannerController = MobileScannerController(
+          detectionSpeed: DetectionSpeed.noDuplicates,
+          facing: CameraFacing.back,
+          torchEnabled: false,
+        );
+        _isScannerInitialized = true;
+      } catch (_) {
+        _isScannerInitialized = false;
+      }
+    }
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -68,11 +86,13 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
     _animCtrl.dispose();
     _manualCodeCtrl.dispose();
     _keyboardFocusNode.dispose();
+    _scannerController?.dispose();
     super.dispose();
   }
 
   void _triggerDetection(String barcode) {
-    if (barcode.trim().isEmpty) return;
+    if (barcode.trim().isEmpty || _hasDetected) return;
+    _hasDetected = true;
     HapticFeedback.mediumImpact();
     widget.onBarcodeScanned(barcode.trim());
     if (mounted) {
@@ -189,7 +209,10 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
                           size: 20,
                         ),
                         tooltip: 'Flashlight',
-                        onPressed: () => setState(() => _isTorchOn = !_isTorchOn),
+                        onPressed: () {
+                          setState(() => _isTorchOn = !_isTorchOn);
+                          _scannerController?.toggleTorch();
+                        },
                       ),
                       IconButton(
                         icon: Icon(
@@ -198,7 +221,10 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
                           size: 20,
                         ),
                         tooltip: 'Switch Camera',
-                        onPressed: () => setState(() => _isFrontCamera = !_isFrontCamera),
+                        onPressed: () {
+                          setState(() => _isFrontCamera = !_isFrontCamera);
+                          _scannerController?.switchCamera();
+                        },
                       ),
                       IconButton(
                         icon: const Icon(LucideIcons.x, color: Colors.white70, size: 20),
@@ -210,9 +236,9 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
               ),
               const SizedBox(height: 12),
 
-              // Camera Viewfinder Box
+              // Camera Viewfinder Box with Live Optical Camera Scanner
               Container(
-                height: 220,
+                height: 240,
                 decoration: BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.circular(16),
@@ -229,50 +255,83 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
                       ),
                   ],
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Viewfinder Reticle (Tap to capture simulation)
-                    InkWell(
-                      onTap: () {
-                        // Generate a valid EAN-13 Kirana Barcode
-                        final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-                        final sampleCode = '890${timestamp.substring(timestamp.length - 9)}';
-                        _triggerDetection(sampleCode);
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        width: 250,
-                        height: 130,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF10B981), width: 2),
-                          borderRadius: BorderRadius.circular(10),
-                          color: const Color(0xFF10B981).withValues(alpha: 0.05),
-                        ),
-                        child: AnimatedBuilder(
-                          animation: _laserAnim,
-                          builder: (context, _) {
-                            return Align(
-                              alignment: Alignment(0, (_laserAnim.value * 2) - 1),
-                              child: Container(
-                                height: 2,
-                                width: 230,
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.red.withValues(alpha: 0.8),
-                                      blurRadius: 6,
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 1. Live hardware camera feed (Optical ML Kit scanner)
+                      if (_isScannerInitialized && _scannerController != null)
+                        Positioned.fill(
+                          child: MobileScanner(
+                            controller: _scannerController!,
+                            onDetect: (capture) {
+                              if (_hasDetected) return;
+                              final barcodes = capture.barcodes;
+                              for (final b in barcodes) {
+                                final raw = b.rawValue;
+                                if (raw != null && raw.trim().isNotEmpty) {
+                                  _triggerDetection(raw.trim());
+                                  break;
+                                }
+                              }
+                            },
+                            errorBuilder: (_, error, __) {
+                              return Container(
+                                color: Colors.black,
+                                child: Center(
+                                  child: Text(
+                                    'Camera unavailable: ${error.errorCode.name}\nEnter code manually below.',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.plusJakartaSans(color: Colors.white60, fontSize: 11),
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
+                        ),
+
+                      // 2. Viewfinder Reticle Overlay with Animated Scanning Laser
+                      InkWell(
+                        onTap: () {
+                          // Fallback tap for simulated test runners & emulators
+                          final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+                          final sampleCode = '890${timestamp.substring(timestamp.length - 9)}';
+                          _triggerDetection(sampleCode);
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 250,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFF10B981), width: 2),
+                            borderRadius: BorderRadius.circular(10),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.05),
+                          ),
+                          child: AnimatedBuilder(
+                            animation: _laserAnim,
+                            builder: (context, _) {
+                              return Align(
+                                alignment: Alignment(0, (_laserAnim.value * 2) - 1),
+                                child: Container(
+                                  height: 2,
+                                  width: 230,
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.red.withValues(alpha: 0.8),
+                                        blurRadius: 6,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
 
                     // Viewfinder Corners Guidance
                     Positioned(
@@ -307,7 +366,8 @@ class _BarcodeScannerModalState extends State<BarcodeScannerModal> with SingleTi
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+            ),
+            const SizedBox(height: 14),
 
               // Quick Action Bar & Manual Barcode Entry
               Row(
